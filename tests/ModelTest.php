@@ -363,6 +363,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('test', $model->accessor);
     }
 
+    function testGetNonExisting()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+
+        $model = new TestModel;
+        $model->nonexistent_property;
+    }
+
     public function testIsset()
     {
         $model = new TestModel(1);
@@ -764,6 +772,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateWithId()
     {
+        $this->setExpectedException('BadMethodCallException');
+        
         $model = new TestModel(5);
         $this->assertFalse($model->create(['relation' => '', 'answer' => 42]));
     }
