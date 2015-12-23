@@ -773,7 +773,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testCreateWithId()
     {
         $this->setExpectedException('BadMethodCallException');
-        
+
         $model = new TestModel(5);
         $this->assertFalse($model->create(['relation' => '', 'answer' => 42]));
     }
@@ -954,6 +954,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetFailWithNoId()
     {
+        $this->setExpectedException('BadMethodCallException');
+        
         $model = new TestModel();
         $this->assertFalse($model->set(['answer' => 42]));
     }
