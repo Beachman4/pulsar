@@ -121,6 +121,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'unique' => false,
                 'required' => false,
             ],
+            'test_model2_id' => [
+                'type' => Model::TYPE_STRING,
+                'null' => false,
+                'mutable' => Model::MUTABLE,
+                'unique' => false,
+                'required' => false,
+            ],            
         ];
 
         $this->assertEquals($expected, TestModel::getProperties());

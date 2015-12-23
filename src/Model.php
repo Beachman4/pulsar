@@ -11,6 +11,7 @@
 namespace Pulsar;
 
 use ICanBoogie\Inflector;
+use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
 use Pulsar\Relation\HasOne;
 use Pulsar\Relation\BelongsTo;
@@ -695,36 +696,59 @@ abstract class Model implements \ArrayAccess
         }
 
         // attempt to load any missing values from the storage layer
-        $numMissing = count(array_diff($properties, array_keys($values)));
-        if ($numMissing > 0) {
+        $missing = array_diff($properties, array_keys($values));
+        if (count($missing) > 0) {
+            // load values for the model
             $this->refresh();
             $values = array_replace($values, $this->_values);
 
+            // add back any unsaved values
             if (!$ignoreUnsaved) {
                 $values = array_replace($values, $this->_unsaved);
             }
         }
 
-        // build a key-value map of the requested properties
-        $return = [];
+        return $this->buildGetResponse($properties, $values);
+    }
+
+    /**
+     * Builds a key-value map of the requested properties given a set of values
+     *
+     * @param array $properties
+     * @param array $values
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException when a property was requested not present in the values
+     */
+    private function buildGetResponse(array $properties, array $values)
+    {
+        $response = [];
         foreach ($properties as $k) {
+            $accessor = self::getAccessor($k);
+
+            // use the supplied value if it's available
             if (array_key_exists($k, $values)) {
-                $return[$k] = $values[$k];
+                $response[$k] = $values[$k];
             // set any missing values to the default value
             } elseif (static::hasProperty($k)) {
-                $return[$k] = $this->_values[$k] = $this->getPropertyDefault(static::$properties[$k]);
-            // use null for values of non-properties
+                $response[$k] = $this->_values[$k] = $this->getPropertyDefault(static::$properties[$k]);
+            // throw an exception for non-properties that do not
+            // have an accessor
+            } else if (!$accessor) {
+                throw new InvalidArgumentException(static::modelName().' does not have a `'.$k.'` property.');
+            // otherwise the value is considered null
             } else {
-                $return[$k] = null;
+                $response[$k] = null;
             }
 
             // call any accessors
-            if ($accessor = self::getAccessor($k)) {
-                $return[$k] = $this->$accessor($return[$k]);
+            if ($accessor) {
+                $response[$k] = $this->$accessor($response[$k]);
             }
         }
 
-        return $return;
+        return $response;
     }
 
     /**
@@ -820,7 +844,7 @@ abstract class Model implements \ArrayAccess
 
         // add included properties
         foreach (array_keys($namedInc) as $k) {
-            if (!isset($result[$k]) && isset($namedInc[$k])) {
+            if (!isset($result[$k]) && isset($namedInc[$k]) && self::hasProperty($k)) {
                 $result[$k] = $this->$k;
             }
         }

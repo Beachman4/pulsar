@@ -26,11 +26,12 @@ class TestModel extends Model
         ],
         'mutator' => [],
         'accessor' => [],
+        'test_model2_id' => []
     ];
     public $preDelete;
     public $postDelete;
 
-    protected static $hidden = ['mutator', 'accessor'];
+    protected static $hidden = ['mutator', 'accessor', 'test_model2_id'];
     protected static $appended = ['appended'];
 
     public static $query;
