@@ -462,8 +462,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'answer' => null,
             'test_hook' => null,
             'appended' => true,
-            // this is tacked on in toArrayHook() below
-            'toArray' => true,
         ];
 
         $this->assertEquals($expected, $model->toArray());
@@ -663,12 +661,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($newModel->create([]));
     }
 
-    public function testCreateHookFail()
-    {
-        $newModel = new TestModelHookFail();
-        $this->assertFalse($newModel->create([]));
-    }
-
     public function testCreateNotUnique()
     {
         $errorStack = self::$app['errors']->clear();
@@ -842,12 +834,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($model->set(['answer' => 42]));
     }
 
-    public function testSetHookFail()
-    {
-        $model = new TestModelHookFail(5);
-        $this->assertFalse($model->set(['answer' => 42]));
-    }
-
     public function testSetUnique()
     {
         $query = TestModel2::query();
@@ -923,21 +909,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($model->delete());
     }
 
-    public function testDeleteWithHook()
-    {
-        $model = new TestModel(100);
-
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-        $driver->shouldReceive('deleteModel')
-               ->withArgs([$model])
-               ->andReturn(true);
-        TestModel2::setDriver($driver);
-
-        $this->assertTrue($model->delete());
-        $this->assertTrue($model->preDelete);
-        $this->assertTrue($model->postDelete);
-    }
-
     public function testDeletingListenerFail()
     {
         TestModel::deleting(function (ModelEvent $event) {
@@ -962,12 +933,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         });
 
         $model = new TestModel(100);
-        $this->assertFalse($model->delete());
-    }
-
-    public function testDeleteHookFail()
-    {
-        $model = new TestModelHookFail(5);
         $this->assertFalse($model->delete());
     }
 
