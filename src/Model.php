@@ -12,6 +12,7 @@ namespace Pulsar;
 
 use BadMethodCallException;
 use ICanBoogie\Inflector;
+use Infuse\ErrorStack;
 use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
 use Pulsar\Relation\HasOne;
@@ -94,6 +95,11 @@ abstract class Model implements \ArrayAccess
      * @var array
      */
     protected $_relationships = [];
+
+    /**
+     * @var \Infuse\ErrorStack
+     */
+    protected $_errors;
 
     /////////////////////////////
     // Base model variables
@@ -629,7 +635,7 @@ abstract class Model implements \ArrayAccess
         foreach ($requiredProperties as $name) {
             if (!isset($insertArray[$name])) {
                 $property = static::$properties[$name];
-                $this->app['errors']->push([
+                $this->getErrors()->push([
                     'error' => self::ERROR_REQUIRED_FIELD_MISSING,
                     'params' => [
                         'field' => $name,
@@ -1265,6 +1271,21 @@ abstract class Model implements \ArrayAccess
     /////////////////////////////
 
     /**
+     * Gets the error stack for this model instance. Used to
+     * keep track of validation errors.
+     *
+     * @return \Infuse\ErrorStack
+     */
+    function getErrors()
+    {
+        if (!$this->_errors) {
+            $this->_errors = new ErrorStack($this->app);
+        }
+
+        return $this->_errors;
+    }
+
+    /**
      * Validates and marshals a value to storage.
      *
      * @param array  $property
@@ -1314,7 +1335,7 @@ abstract class Model implements \ArrayAccess
         }
 
         if (!$valid) {
-            $this->app['errors']->push([
+            $this->getErrors()->push([
                 'error' => self::ERROR_VALIDATION_FAILED,
                 'params' => [
                     'field' => $propertyName,
@@ -1336,7 +1357,7 @@ abstract class Model implements \ArrayAccess
     private function checkUniqueness(array $property, $propertyName, $value)
     {
         if (static::totalRecords([$propertyName => $value]) > 0) {
-            $this->app['errors']->push([
+            $this->getErrors()->push([
                 'error' => self::ERROR_NOT_UNIQUE,
                 'params' => [
                     'field' => $propertyName,
