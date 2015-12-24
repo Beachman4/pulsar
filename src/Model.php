@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 namespace Pulsar;
 
 use BadMethodCallException;
@@ -593,17 +593,12 @@ abstract class Model implements \ArrayAccess
         }
 
         // dispatch the model.creating event
-        if (!$this->handleDispatch(ModelEvent::CREATING)) {
+        $event = $this->dispatch(ModelEvent::CREATING);
+        if ($event->isPropagationStopped()) {
             return false;
         }
 
-        $requiredProperties = [];
         foreach (static::$properties as $name => $property) {
-            // build a list of the required properties
-            if ($property['required']) {
-                $requiredProperties[] = $name;
-            }
-
             // add in default values
             if (!array_key_exists($name, $this->_unsaved) && array_key_exists('default', $property)) {
                 $this->_unsaved[$name] = $property['default'];
@@ -631,21 +626,11 @@ abstract class Model implements \ArrayAccess
             $insertArray[$name] = $value;
         }
 
-        // check for required fields
-        foreach ($requiredProperties as $name) {
-            if (!isset($insertArray[$name])) {
-                $property = static::$properties[$name];
-                $this->getErrors()->push([
-                    'error' => self::ERROR_REQUIRED_FIELD_MISSING,
-                    'params' => [
-                        'field' => $name,
-                        'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
-
-                $validated = false;
-            }
-        }
-
-        if (!$validated) {
+        // the final validation check is to look for required fields
+        // it should be ran before returning (even if the validation
+        // has already failed) in order to build a complete list of
+        // validation errors
+        if (!$this->hasRequiredValues($insertArray) || !$validated) {
             return false;
         }
 
@@ -661,7 +646,8 @@ abstract class Model implements \ArrayAccess
             $this->clearCache();
 
             // dispatch the model.created event
-            if (!$this->handleDispatch(ModelEvent::CREATED)) {
+            $event = $this->dispatch(ModelEvent::CREATED);
+            if ($event->isPropagationStopped()) {
                 return false;
             }
         }
@@ -721,7 +707,7 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Builds a key-value map of the requested properties given a set of values
+     * Builds a key-value map of the requested properties given a set of values.
      *
      * @param array $properties
      * @param array $values
@@ -744,7 +730,7 @@ abstract class Model implements \ArrayAccess
                 $response[$k] = $this->_values[$k] = $this->getPropertyDefault(static::$properties[$k]);
             // throw an exception for non-properties that do not
             // have an accessor
-            } else if (!$accessor) {
+            } elseif (!$accessor) {
                 throw new InvalidArgumentException(static::modelName().' does not have a `'.$k.'` property.');
             // otherwise the value is considered null
             } else {
@@ -835,7 +821,8 @@ abstract class Model implements \ArrayAccess
         }
 
         // dispatch the model.updating event
-        if (!$this->handleDispatch(ModelEvent::UPDATING)) {
+        $event = $this->dispatch(ModelEvent::UPDATING);
+        if ($event->isPropagationStopped()) {
             return false;
         }
 
@@ -872,7 +859,8 @@ abstract class Model implements \ArrayAccess
             $this->clearCache();
 
             // dispatch the model.updated event
-            if (!$this->handleDispatch(ModelEvent::UPDATED)) {
+            $event = $this->dispatch(ModelEvent::UPDATED);
+            if ($event->isPropagationStopped()) {
                 return false;
             }
         }
@@ -892,7 +880,8 @@ abstract class Model implements \ArrayAccess
         }
 
         // dispatch the model.deleting event
-        if (!$this->handleDispatch(ModelEvent::DELETING)) {
+        $event = $this->dispatch(ModelEvent::DELETING);
+        if ($event->isPropagationStopped()) {
             return false;
         }
 
@@ -900,7 +889,8 @@ abstract class Model implements \ArrayAccess
 
         if ($deleted) {
             // dispatch the model.deleted event
-            if (!$this->handleDispatch(ModelEvent::DELETED)) {
+            $event = $this->dispatch(ModelEvent::DELETED);
+            if ($event->isPropagationStopped()) {
                 return false;
             }
 
@@ -1252,20 +1242,6 @@ abstract class Model implements \ArrayAccess
         return static::getDispatcher()->dispatch($eventName, $event);
     }
 
-    /**
-     * Dispatches the given event and checks if it was successful.
-     *
-     * @param string $eventName
-     *
-     * @return bool
-     */
-    private function handleDispatch($eventName)
-    {
-        $event = $this->dispatch($eventName);
-        
-        return !$event->isPropagationStopped();
-    }
-
     /////////////////////////////
     // Validation
     /////////////////////////////
@@ -1276,7 +1252,7 @@ abstract class Model implements \ArrayAccess
      *
      * @return \Infuse\ErrorStack
      */
-    function getErrors()
+    public function getErrors()
     {
         if (!$this->_errors) {
             $this->_errors = new ErrorStack($this->app);
@@ -1367,6 +1343,33 @@ abstract class Model implements \ArrayAccess
         }
 
         return true;
+    }
+
+    /**
+     * Checks if an input has all of the required values. Adds
+     * messages for any missing values to the error stack.
+     *
+     * @param array $values
+     *
+     * @return bool
+     */
+    private function hasRequiredValues(array $values)
+    {
+        $hasRequired = true;
+        foreach (static::$properties as $name => $property) {
+            if ($property['required'] && !isset($values[$name])) {
+                $property = static::$properties[$name];
+                $this->getErrors()->push([
+                    'error' => self::ERROR_REQUIRED_FIELD_MISSING,
+                    'params' => [
+                        'field' => $name,
+                        'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
+
+                $hasRequired = false;
+            }
+        }
+
+        return $hasRequired;
     }
 
     /**
