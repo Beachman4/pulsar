@@ -1,14 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
-use Infuse\ErrorStack;
 use Infuse\Locale;
 use Pulsar\Model;
 use Pulsar\ModelEvent;
@@ -84,7 +83,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'relation' => [
                 'type' => Model::TYPE_NUMBER,
-                'relation' => 'TestModel2',
                 'null' => true,
                 'unique' => false,
                 'required' => false,
@@ -124,7 +122,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
                 'required' => false,
-            ],            
+            ],
         ];
 
         $this->assertEquals($expected, TestModel::getProperties());
@@ -156,7 +154,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => Model::TYPE_NUMBER,
-            'relation' => 'TestModel2',
             'null' => true,
             'unique' => false,
             'required' => false,
@@ -228,9 +225,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'unique' => false,
                 'required' => false,
             ],
-            'person' => [
+            'person_id' => [
                 'type' => Model::TYPE_NUMBER,
-                'relation' => 'Person',
                 'default' => 20,
                 'mutable' => Model::MUTABLE,
                 'null' => false,
@@ -282,7 +278,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
         ];
 
-        $model = new TestModel2; // forces initialize()
+        $model = new TestModel2(); // forces initialize()
         $this->assertEquals($expected, TestModel2::getProperties());
     }
 
@@ -307,9 +303,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('getAccessorValue', TestModel::getAccessor('accessor'));
     }
 
-    function testGetErrors()
+    public function testGetErrors()
     {
-        $model = new TestModel;
+        $model = new TestModel();
         $stack = $model->getErrors();
         $this->assertInstanceOf('Infuse\ErrorStack', $stack);
         $this->assertEquals($stack, $model->getErrors());
@@ -372,11 +368,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('test', $model->accessor);
     }
 
-    function testGetNonExisting()
+    public function testGetNonExisting()
     {
         $this->setExpectedException('InvalidArgumentException');
 
-        $model = new TestModel;
+        $model = new TestModel();
         $model->nonexistent_property;
     }
 
@@ -605,7 +601,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                         'shipping' => false,
                     ],
                     'object' => $object,
-                    'person' => 20,
+                    'person_id' => 20,
                  ]])
                ->andReturn(true);
 
@@ -905,7 +901,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testDeleteWithNoId()
     {
         $this->setExpectedException('BadMethodCallException');
-        
+
         $model = new TestModel();
         $this->assertFalse($model->delete());
     }
@@ -1033,30 +1029,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
     // Relationships
     /////////////////////////////
 
-    public function testRelation()
-    {
-        $model = new TestModel();
-        $model->relation = 2;
-
-        $relation = $model->relation('relation');
-        $this->assertInstanceOf('TestModel2', $relation);
-        $this->assertEquals(2, $relation->id());
-
-        // test if relation model is cached
-        $relation->test = 'hello';
-        $relation2 = $model->relation('relation');
-        $this->assertEquals('hello', $relation2->test);
-
-        // reset the relation
-        $model->relation = 3;
-        $this->assertEquals(3, $model->relation('relation')->id());
-
-        // check other methods for thorougness...
-        unset($model->relation);
-        $model->relation = 4;
-        $this->assertEquals(4, $model->relation('relation')->id());
-    }
-
     public function testHasOne()
     {
         $model = new TestModel();
@@ -1107,6 +1079,80 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('id', $relation->getForeignKey());
         $this->assertEquals('test_model2_id', $relation->getLocalKey());
         $this->assertEquals($model, $relation->getRelation());
+    }
+
+    public function testIsRelationship()
+    {
+        $this->assertTrue(TestModel2::isRelationship('person'));
+        $this->assertFalse(TestModel2::isRelationship('id'));
+        $this->assertFalse(TestModel2::isRelationship('person_id'));
+    }
+
+    public function testRelation()
+    {
+        $this->markTestIncomplete();
+        $model = new TestModel();
+        $model->relation = 2;
+
+        $relation = $model->relation('relation');
+        $this->assertInstanceOf('TestModel2', $relation);
+        $this->assertEquals(2, $relation->id());
+
+        // test if relation model is cached
+        $relation->test = 'hello';
+        $relation2 = $model->relation('relation');
+        $this->assertEquals('hello', $relation2->test);
+
+        // reset the relation
+        $model->relation = 3;
+        $this->assertEquals(3, $model->relation('relation')->id());
+
+        // check other methods for thorougness...
+        unset($model->relation);
+        $model->relation = 4;
+        $this->assertEquals(4, $model->relation('relation')->id());
+    }
+
+    public function testGetRelationship()
+    {
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $person = new Person();
+        $driver->shouldReceive('queryModels')
+               ->andReturnUsing(function ($query) {
+                    return [['id' => $query->getWhere()['id']]];
+               });
+
+        Person::setDriver($driver);
+
+        $model = new TestModel2();
+        $model->person_id = '10';
+        $person = $model->person;
+        $this->assertInstanceOf('Person', $person);
+        $this->assertEquals('10', $person->id);
+
+        // test if relation model is cached
+        $model->clearCache();
+        $model->person_id = '11';
+        $person = $model->person;
+        $this->assertInstanceOf('Person', $person);
+        $this->assertEquals('11', $person->id);
+    }
+
+    public function testSetRelationship()
+    {
+        $this->setExpectedException('BadMethodCallException');
+
+        $model = new TestModel2();
+        $model->person = 'test';
+    }
+
+    public function testUnsetRelationship()
+    {
+        $this->setExpectedException('BadMethodCallException');
+
+        $model = new TestModel2();
+        unset($model->person);
     }
 
     /////////////////////////////

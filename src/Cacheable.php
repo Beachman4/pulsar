@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 namespace Pulsar;
 
 use Stash\Item;
@@ -65,9 +65,6 @@ trait Cacheable
         } else {
             parent::refresh();
         }
-
-        // clear any relationships
-        $this->_relationships = [];
 
         return $this;
     }

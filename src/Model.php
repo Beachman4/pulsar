@@ -62,6 +62,11 @@ abstract class Model implements \ArrayAccess
     protected static $properties = [];
 
     /**
+     * @staticvar array
+     */
+    protected static $relationships = [];
+
+    /**
      * @staticvar \Pimple\Container
      */
     protected static $injectedApp;
@@ -90,11 +95,6 @@ abstract class Model implements \ArrayAccess
      * @var array
      */
     protected $_unsaved = [];
-
-    /**
-     * @var array
-     */
-    protected $_relationships = [];
 
     /**
      * @var \Infuse\ErrorStack
@@ -262,7 +262,7 @@ abstract class Model implements \ArrayAccess
     /**
      * Gets the DI container used for this model.
      *
-     * @return Container
+     * @return \Pimple\Container
      */
     public function getApp()
     {
@@ -361,6 +361,12 @@ abstract class Model implements \ArrayAccess
      */
     public function __get($name)
     {
+        // get relationship values
+        if (static::isRelationship($name)) {
+            return $this->loadRelationship($name);
+        }
+
+        // get property values
         $result = $this->get([$name]);
 
         return reset($result);
@@ -371,12 +377,13 @@ abstract class Model implements \ArrayAccess
      *
      * @param string $name
      * @param mixed  $value
+     *
+     * @throws BadMethodCallException
      */
     public function __set($name, $value)
     {
-        // if changing property, remove relation model
-        if (isset($this->_relationships[$name])) {
-            unset($this->_relationships[$name]);
+        if (static::isRelationship($name)) {
+            throw new BadMethodCallException("Cannot set the `$name` property because it is a relationship");
         }
 
         // call any mutators
@@ -404,15 +411,16 @@ abstract class Model implements \ArrayAccess
      * Unsets an unsaved value.
      *
      * @param string $name
+     *
+     * @throws BadMethodCallException
      */
     public function __unset($name)
     {
-        if (array_key_exists($name, $this->_unsaved)) {
-            // if changing property, remove relation model
-            if (isset($this->_relationships[$name])) {
-                unset($this->_relationships[$name]);
-            }
+        if (static::isRelationship($name)) {
+            throw new BadMethodCallException("Cannot unset the `$name` property because it is a relationship");
+        }
 
+        if (array_key_exists($name, $this->_unsaved)) {
             unset($this->_unsaved[$name]);
         }
     }
@@ -551,6 +559,18 @@ abstract class Model implements \ArrayAccess
         }
 
         return self::$accessors[$k];
+    }
+
+    /**
+     * Checks if a given property is a relationship.
+     *
+     * @param string $property
+     *
+     * @return bool
+     */
+    public static function isRelationship($property)
+    {
+        return in_array($property, static::$relationships);
     }
 
     /////////////////////////////
@@ -910,7 +930,7 @@ abstract class Model implements \ArrayAccess
     /**
      * Generates a new query instance.
      *
-     * @return Model\Query
+     * @return Query
      */
     public static function query()
     {
@@ -972,9 +992,6 @@ abstract class Model implements \ArrayAccess
             return $this;
         }
 
-        // clear any relations
-        $this->_relationships = [];
-
         return $this->refreshWith($values);
     }
 
@@ -1001,7 +1018,6 @@ abstract class Model implements \ArrayAccess
     {
         $this->_unsaved = [];
         $this->_values = [];
-        $this->_relationships = [];
 
         return $this;
     }
@@ -1011,34 +1027,13 @@ abstract class Model implements \ArrayAccess
     /////////////////////////////
 
     /**
-     * Gets the model object corresponding to a relation
-     * WARNING no check is used to see if the model returned actually exists.
-     *
-     * @param string $propertyName property
-     *
-     * @return \Pulsar\Model model
-     */
-    public function relation($propertyName)
-    {
-        // TODO deprecated
-        $property = static::getProperty($propertyName);
-
-        if (!isset($this->_relationships[$propertyName])) {
-            $relationModelName = $property['relation'];
-            $this->_relationships[$propertyName] = new $relationModelName($this->$propertyName);
-        }
-
-        return $this->_relationships[$propertyName];
-    }
-
-    /**
      * Creates the parent side of a One-To-One relationship.
      *
      * @param string $model      foreign model class
      * @param string $foreignKey identifying key on foreign model
      * @param string $localKey   identifying key on local model
      *
-     * @return Relation
+     * @return \Pulsar\Relation\Relation
      */
     public function hasOne($model, $foreignKey = '', $localKey = '')
     {
@@ -1063,7 +1058,7 @@ abstract class Model implements \ArrayAccess
      * @param string $foreignKey identifying key on foreign model
      * @param string $localKey   identifying key on local model
      *
-     * @return Relation
+     * @return \Pulsar\Relation\Relation
      */
     public function belongsTo($model, $foreignKey = '', $localKey = '')
     {
@@ -1088,7 +1083,7 @@ abstract class Model implements \ArrayAccess
      * @param string $foreignKey identifying key on foreign model
      * @param string $localKey   identifying key on local model
      *
-     * @return Relation
+     * @return \Pulsar\Relation\Relation
      */
     public function hasMany($model, $foreignKey = '', $localKey = '')
     {
@@ -1113,7 +1108,7 @@ abstract class Model implements \ArrayAccess
      * @param string $foreignKey identifying key on foreign model
      * @param string $localKey   identifying key on local model
      *
-     * @return Relation
+     * @return \Pulsar\Relation\Relation
      */
     public function belongsToMany($model, $foreignKey = '', $localKey = '')
     {
@@ -1129,6 +1124,24 @@ abstract class Model implements \ArrayAccess
         }
 
         return new BelongsToMany($model, $foreignKey, $localKey, $this);
+    }
+
+    /**
+     * Loads a given relationship (if not already) and returns
+     * its results.
+     *
+     * @param string $name
+     *
+     * @return mixed
+     */
+    protected function loadRelationship($name)
+    {
+        if (!isset($this->_values[$name])) {
+            $relationship = $this->$name();
+            $this->_values[$name] = $relationship->getResults();
+        }
+
+        return $this->_values[$name];
     }
 
     /////////////////////////////
@@ -1233,7 +1246,7 @@ abstract class Model implements \ArrayAccess
      *
      * @param string $eventName
      *
-     * @return Model\ModelEvent
+     * @return ModelEvent
      */
     protected function dispatch($eventName)
     {

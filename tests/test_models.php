@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 use Pulsar\Model;
 use Pulsar\ACLModel;
 use Pulsar\Cacheable;
@@ -18,7 +18,6 @@ class TestModel extends Model
     protected static $properties = [
         'relation' => [
             'type' => Model::TYPE_NUMBER,
-            'relation' => 'TestModel2',
             'null' => true,
         ],
         'answer' => [
@@ -26,7 +25,7 @@ class TestModel extends Model
         ],
         'mutator' => [],
         'accessor' => [],
-        'test_model2_id' => []
+        'test_model2_id' => [],
     ];
     public $preDelete;
     public $postDelete;
@@ -116,9 +115,8 @@ class TestModel2 extends Model
             'type' => Model::TYPE_BOOLEAN,
             'default' => false,
         ],
-        'person' => [
+        'person_id' => [
             'type' => Model::TYPE_NUMBER,
-            'relation' => 'Person',
             'default' => 20,
         ],
         'array' => [
@@ -138,6 +136,7 @@ class TestModel2 extends Model
     ];
 
     protected static $autoTimestamps;
+    protected static $relationships = ['person'];
     protected static $hidden = ['validate2', 'hidden', 'person', 'array', 'object', 'mutable_create_only'];
 
     public static $query;
@@ -156,6 +155,11 @@ class TestModel2 extends Model
     public static function setQuery(Query $query)
     {
         self::$query = $query;
+    }
+
+    public function person()
+    {
+        return $this->belongsTo('Person');
     }
 }
 
