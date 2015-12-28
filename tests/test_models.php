@@ -228,10 +228,9 @@ class CacheableModel extends Model
 {
     use Cacheable;
 
-    public static $cacheTTL = 10;
+    protected static $properties = [
+        'answer' => [],
+    ];
 
-    protected function initialize()
-    {
-        parent::initialize();
-    }
+    public static $cacheTTL = 10;
 }

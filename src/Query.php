@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 namespace Pulsar;
 
 class Query
@@ -245,14 +245,10 @@ class Query
 
         $models = [];
         foreach ($driver->queryModels($this) as $row) {
-            // get the model's ID
-            $id = [];
-            foreach ($model::getIDProperties() as $k) {
-                $id[] = $row[$k];
-            }
-
-            // create the model and cache the loaded values
-            $models[] = new $model($id, $row);
+            // create a model with the retrieved values
+            $obj = new $model();
+            $obj->refreshWith($row);
+            $models[] = $obj;
         }
 
         return $models;

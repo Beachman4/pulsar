@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 use Pulsar\Model;
 use Pulsar\Driver\DatabaseDriver;
 use Pulsar\Query;
@@ -28,7 +28,7 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('TestModels', $driver->getTablename('TestModel'));
 
-        $model = new TestModel(4);
+        $model = new TestModel();
         $this->assertEquals('TestModels', $driver->getTablename($model));
     }
 
@@ -145,7 +145,7 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         $driver = new DatabaseDriver(self::$app);
 
-        $model = new Person(12);
+        $model = Person::buildFromId(12);
         $this->assertEquals(['name' => 'John'], $driver->loadModel($model));
     }
 
@@ -173,7 +173,7 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $driver = new DatabaseDriver(self::$app);
         Person::setDriver($driver);
 
-        $model = new Person(11);
+        $model = Person::buildFromId(11);
 
         $this->assertTrue($driver->updateModel($model, []));
 
@@ -193,7 +193,7 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $driver = new DatabaseDriver(self::$app);
         Person::setDriver($driver);
 
-        $model = new Person(10);
+        $model = Person::buildFromId(10);
         $this->assertTrue($driver->deleteModel($model));
     }
 

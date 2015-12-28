@@ -29,44 +29,42 @@ trait Cacheable
      */
     private $_cacheItem;
 
-    public function refresh()
+    public static function find($id)
     {
-        if ($this->_id === false) {
-            return $this;
-        }
-
         if (self::$cachePool) {
-            // First, attempts to load the model from the caching layer.
-             // If that fails, then attempts to load the model from the
-             // database layer.
-            $item = $this->getCacheItem();
+            // Attempt to load the model from the caching layer first.
+            // If that fails, then fall through to the data layer.
+            $model = static::buildFromId($id);
+            $item = $model->getCacheItem();
             $values = $item->get();
 
-            if ($item->isMiss()) {
-                // If the cache was a miss, then lock down the
-                // cache item, attempt to refresh the model from
-                // the database, and then update the cache.
-                // Stash calls this Stampede Protection.
+            if (!$item->isMiss()) {
+                // load the values directly instead of using
+                // refreshWith() to prevent triggering another
+                // cache call
+                $model->_exists = true;
+                $model->_values = $values;
 
-                // NOTE Currently disabling Stampede Protection
-                // because there is no way to unlock the item
-                // if we fail to refresh the model, whether
-                // due to a DB failure or non-existent record.
-                // This is problematic with the Redis driver
-                // because it will attempt to unlock the cache
-                // item once the script shuts down and the
-                // redis connection has closed.
-                // $item->lock();
-
-                parent::refresh();
-            } else {
-                $this->_values = $values;
+                return $model;
             }
-        } else {
-            parent::refresh();
+
+            // If the cache was a miss, then lock down the
+            // cache item, attempt to load the model from
+            // the database, and then update the cache.
+            // Stash calls this Stampede Protection.
+
+            // NOTE Currently disabling Stampede Protection
+            // because there is no way to unlock the item
+            // if we fail to load the model, whether
+            // due to a DB failure or non-existent record.
+            // This is problematic with the Redis driver
+            // because it will attempt to unlock the cache
+            // item once the script shuts down and the
+            // redis connection has closed.
+            // $item->lock();
         }
 
-        return $this;
+        return parent::find($id);
     }
 
     public function refreshWith(array $values)
@@ -125,7 +123,7 @@ trait Cacheable
             self::$cachePrefix[$k] = 'models/'.strtolower(static::modelName());
         }
 
-        return self::$cachePrefix[$k].'/'.$this->_id;
+        return self::$cachePrefix[$k].'/'.$this->id();
     }
 
     /**

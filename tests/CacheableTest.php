@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 use Pimple\Container;
 use Stash\Pool;
 
@@ -25,6 +25,11 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
         CacheableModel::inject(self::$app);
     }
 
+    protected function tearDown()
+    {
+        CacheableModel::setCachePool(null);
+    }
+
     public function testGetCachePool()
     {
         $cache = Mockery::mock('Stash\Pool');
@@ -40,11 +45,12 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
         $driver->shouldReceive('loadModel')
-               ->andReturn(['answer' => 42]);
+               ->andReturn(['id' => 5, 'answer' => 42]);
         CacheableModel::setDriver($driver);
 
         CacheableModel::setCachePool(null);
-        $model = new CacheableModel(5);
+        $model = new CacheableModel();
+        $model->refreshWith(['id' => 5]);
         $this->assertNull($model->getCachePool());
         $this->assertNull($model->getCacheItem());
         $this->assertEquals($model, $model->refresh());
@@ -62,7 +68,8 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
 
     public function testGetCacheKey()
     {
-        $model = new CacheableModel(5);
+        $model = new CacheableModel();
+        $model->refreshWith(['id' => 5]);
         $this->assertEquals('models/cacheablemodel/5', $model->getCacheKey());
     }
 
@@ -71,89 +78,67 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
         $cache = new Pool();
         CacheableModel::setCachePool($cache);
 
-        $model = new CacheableModel(5);
+        $model = new CacheableModel();
+        $model->refreshWith(['id' => 5]);
         $item = $model->getCacheItem();
         $this->assertInstanceOf('Stash\Item', $item);
         $this->assertEquals('models/cacheablemodel/5', $item->getKey());
 
-        $model = new CacheableModel(6);
+        $model = new CacheableModel();
+        $model->refreshWith(['id' => 6]);
         $item = $model->getCacheItem();
         $this->assertInstanceOf('Stash\Item', $item);
         $this->assertEquals('models/cacheablemodel/6', $item->getKey());
     }
 
-    public function testCacheHit()
+    public function testFind()
     {
         $cache = new Pool();
-
-        $model = new CacheableModel(100);
         CacheableModel::setCachePool($cache);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
         $driver->shouldReceive('loadModel')
-               ->andReturn(['answer' => 42])
+               ->andReturn(['id' => 100, 'answer' => 42])
                ->once();
 
         CacheableModel::setDriver($driver);
 
-        // load from the db first
-        $this->assertEquals($model, $model->refresh());
-        // load without skipping cache
-        $this->assertEquals($model, $model->refresh());
-
-        // this should be a hit from the cache
-        $this->assertEquals(42, $model->answer);
-    }
-
-    public function testCacheMiss()
-    {
-        $cache = new Pool();
-
-        $model = new CacheableModel(101);
-        CacheableModel::setCachePool($cache);
-
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['answer' => 42]);
-
-        CacheableModel::setDriver($driver);
-
-        $this->assertEquals($model, $model->refresh());
+        // the first find() call should be a miss
+        // this triggers a load from the data layer
+        $model = CacheableModel::find(100);
+        $this->assertInstanceOf('CacheableModel', $model);
+        $this->assertEquals(100, $model->id());
 
         // value should now be cached
         $item = $cache->getItem($model->getCacheKey());
         $value = $item->get();
         $this->assertFalse($item->isMiss());
-        $expected = ['answer' => 42];
+        $expected = ['id' => 100, 'answer' => 42];
         $this->assertEquals($expected, $value);
+
+        // the next find() call should be a hit from the cache
+        $model = CacheableModel::find(100);
+        $this->assertInstanceOf('CacheableModel', $model);
+        $this->assertEquals(100, $model->id());
+        $this->assertEquals(42, $model->answer);
     }
 
     public function testCache()
     {
-        $model = new CacheableModel(102);
-        $this->assertEquals($model, $model->cache());
-
         $cache = new Pool();
         CacheableModel::setCachePool($cache);
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['answer' => 42]);
-
-        CacheableModel::setDriver($driver);
+        $model = new CacheableModel(['id' => 102, 'answer' => 42]);
 
         // cache
-        $this->assertEquals($model, $model->refresh()->cache());
+        $this->assertEquals($model, $model->cache());
         $item = $cache->getItem($model->getCacheKey());
         $value = $item->get();
         $this->assertFalse($item->isMiss());
 
         // clear the cache
         $this->assertEquals($model, $model->clearCache());
-        $item = $cache->getItem($model->getCacheKey());
         $value = $item->get();
         $this->assertTrue($item->isMiss());
     }

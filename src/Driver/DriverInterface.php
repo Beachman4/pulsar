@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 namespace Pulsar\Driver;
 
 use Pulsar\Model;
@@ -41,7 +41,7 @@ interface DriverInterface
      *
      * @param \Pulsar\Model $model
      *
-     * @return array
+     * @return array|false
      */
     public function loadModel(Model $model);
 

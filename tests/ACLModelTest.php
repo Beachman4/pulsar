@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @package Pulsar
  * @author Jared King <j@jaredtking.com>
+ *
  * @link http://jaredtking.com
+ *
  * @copyright 2015 Jared King
  * @license MIT
  */
-
 use Infuse\ErrorStack;
 use Infuse\Locale;
 use Pulsar\ACLModel;
@@ -33,13 +33,13 @@ class ACLModelTest extends PHPUnit_Framework_TestCase
 
         ACLModel::inject(self::$app);
 
-        self::$requester = new Person(1);
+        self::$requester = new Person(['id' => 1]);
         ACLModel::setRequester(self::$requester);
     }
 
     public function testRequester()
     {
-        $requester = new Person(2);
+        $requester = new Person(['id' => 2]);
         ACLModel::setRequester($requester);
         $this->assertEquals($requester, ACLModel::getRequester());
     }
@@ -49,7 +49,7 @@ class ACLModelTest extends PHPUnit_Framework_TestCase
         $acl = new AclObject();
 
         $this->assertFalse($acl->can('whatever', new TestModel()));
-        $this->assertTrue($acl->can('do nothing', new TestModel(5)));
+        $this->assertTrue($acl->can('do nothing', new TestModel(['id' => 5])));
         $this->assertFalse($acl->can('do nothing', new TestModel()));
     }
 
@@ -94,7 +94,8 @@ class ACLModelTest extends PHPUnit_Framework_TestCase
     {
         $errorStack = self::$app['errors']->clear();
 
-        $model = new TestModelNoPermission(5);
+        $model = new TestModelNoPermission();
+        $model->refreshWith(['id' => 5]);
         $this->assertFalse($model->set(['answer' => 42]));
         $this->assertCount(1, $errorStack->errors());
     }
@@ -102,7 +103,8 @@ class ACLModelTest extends PHPUnit_Framework_TestCase
     public function testDeleteNoPermission()
     {
         $errorStack = self::$app['errors']->clear();
-        $model = new TestModelNoPermission(5);
+        $model = new TestModelNoPermission();
+        $model->refreshWith(['id' => 5]);
         $this->assertFalse($model->delete());
         $this->assertCount(1, $errorStack->errors());
     }

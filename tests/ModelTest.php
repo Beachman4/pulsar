@@ -48,6 +48,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($c, $model->getApp());
     }
 
+    public function testNoDriver()
+    {
+        $this->setExpectedException('BadMethodCallException');
+        Model::clearDriver();
+        Model::getDriver();
+    }
+
     public function testDriver()
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
@@ -282,11 +289,21 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, TestModel2::getProperties());
     }
 
-    public function testGetIDProperties()
+    public function testGetIdProperties()
     {
-        $this->assertEquals(['id'], TestModel::getIDProperties());
+        $this->assertEquals(['id'], TestModel::getIdProperties());
 
-        $this->assertEquals(['id', 'id2'], TestModel2::getIDProperties());
+        $this->assertEquals(['id', 'id2'], TestModel2::getIdProperties());
+    }
+
+    public function testBuildFromId()
+    {
+        $model = TestModel::buildFromId(100);
+        $this->assertInstanceOf('TestModel', $model);
+        $this->assertEquals(100, $model->id());
+
+        $model = TestModel2::buildFromId([101, 102]);
+        $this->assertEquals('101,102', $model->id());
     }
 
     public function testGetMutator()
@@ -317,43 +334,34 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testId()
     {
-        $model = new TestModel(5);
-
+        $model = new TestModel(['id' => 5]);
         $this->assertEquals(5, $model->id());
-
-        $model2 = new TestModel($model);
-        $this->assertEquals(5, $model2->id());
     }
 
     public function testMultipleIds()
     {
-        $model = new TestModel2([5, 2]);
-
+        $model = new TestModel2(['id' => 5, 'id2' => 2]);
         $this->assertEquals('5,2', $model->id());
-
-        $model2 = new TestModel(5);
-        $model3 = new TestModel2([$model2, 2]);
-        $this->assertEquals('5,2', $model3->id());
     }
 
     public function testIds()
     {
-        $model = new TestModel(3);
+        $model = new TestModel(['id' => 3]);
         $this->assertEquals(['id' => 3], $model->ids());
 
-        $model = new TestModel2([5, 2]);
+        $model = new TestModel2(['id' => 5, 'id2' => 2]);
         $this->assertEquals(['id' => 5, 'id2' => 2], $model->ids());
     }
 
     public function testToString()
     {
-        $model = new TestModel(1);
+        $model = new TestModel(['id' => 1]);
         $this->assertEquals('TestModel(1)', (string) $model);
     }
 
     public function testSetAndGetUnsaved()
     {
-        $model = new TestModel(2);
+        $model = new TestModel();
 
         $model->test = 12345;
         $this->assertEquals(12345, $model->test);
@@ -378,7 +386,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testIsset()
     {
-        $model = new TestModel(1);
+        $model = new TestModel();
 
         $this->assertFalse(isset($model->test2));
 
@@ -391,7 +399,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testUnset()
     {
-        $model = new TestModel(1);
+        $model = new TestModel();
 
         $model->test = 12345;
         unset($model->test);
@@ -401,12 +409,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testHasNoId()
     {
         $model = new TestModel();
-        $this->assertFalse($model->id());
+        $this->assertNull($model->id());
     }
 
     public function testGetMultipleProperties()
     {
-        $model = new TestModel(3);
+        $model = new TestModel(['id' => 3]);
         $model->relation = '10';
         $model->answer = 42;
 
@@ -420,15 +428,16 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $values);
     }
 
-    public function testGetFromDb()
+    public function testGetFromStorage()
     {
-        $model = new TestModel(12);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 12]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
         $driver->shouldReceive('loadModel')
                ->withArgs([$model])
-               ->andReturn(['answer' => 42])
+               ->andReturn(['id' => 12, 'answer' => 42])
                ->once();
 
         TestModel::setDriver($driver);
@@ -438,28 +447,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testGetDefaultValue()
     {
-        $model = new TestModel2(12);
-
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('loadModel')
-               ->andReturn([]);
-
-        TestModel2::setDriver($driver);
+        $model = new TestModel2(['id' => 12]);
 
         $this->assertEquals('some default value', $model->default);
     }
 
     public function testToArray()
     {
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('loadModel')
-               ->andReturn([]);
-
-        TestModel::setDriver($driver);
-
-        $model = new TestModel(5);
+        $model = new TestModel(['id' => 5]);
 
         $expected = [
             'id' => 5,
@@ -632,7 +627,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('BadMethodCallException');
 
-        $model = new TestModel(5);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 5]);
         $this->assertFalse($model->create(['relation' => '', 'answer' => 42]));
     }
 
@@ -727,7 +723,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSet()
     {
-        $model = new TestModel(10);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 10]);
 
         $this->assertTrue($model->set([]));
 
@@ -744,7 +741,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetWithSave()
     {
-        $model = new TestModel(10);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 10]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
@@ -760,7 +758,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetMultiple()
     {
-        $model = new TestModel(11);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 11]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
@@ -780,7 +779,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetImmutableProperties()
     {
-        $model = new TestModel(10);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 10]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
@@ -795,7 +795,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'id' => 432,
             'mutable_create_only' => 'blah',
         ]));
-        $this->assertEquals(10, $model->id);
     }
 
     public function testSetFailWithNoId()
@@ -812,7 +811,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
             $event->stopPropagation();
         });
 
-        $model = new TestModel(100);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 100]);
         $this->assertFalse($model->set(['answer' => 42]));
     }
 
@@ -829,7 +829,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
             $event->stopPropagation();
         });
 
-        $model = new TestModel(100);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 100]);
         $this->assertFalse($model->set(['answer' => 42]));
     }
 
@@ -850,7 +851,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         TestModel2::setDriver($driver);
 
-        $model = new TestModel2(12);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 12]);
         $this->assertTrue($model->set(['unique' => 'works']));
 
         // validate query where statement
@@ -869,13 +871,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         TestModel2::setDriver($driver);
 
-        $model = new TestModel2(12);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 12]);
         $this->assertTrue($model->set(['unique' => 'works']));
     }
 
     public function testSetInvalid()
     {
-        $model = new TestModel2(15);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 15]);
 
         $this->assertFalse($model->set(['validate2' => 'invalid']));
         $this->assertCount(1, $model->getErrors());
@@ -887,7 +891,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testDelete()
     {
-        $model = new TestModel2(1);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 1]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
         $driver->shouldReceive('deleteModel')
@@ -912,7 +917,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
             $event->stopPropagation();
         });
 
-        $model = new TestModel(100);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 100]);
         $this->assertFalse($model->delete());
     }
 
@@ -929,13 +935,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
             $event->stopPropagation();
         });
 
-        $model = new TestModel(100);
+        $model = new TestModel();
+        $model->refreshWith(['id' => 100]);
         $this->assertFalse($model->delete());
     }
 
     public function testDeleteFail()
     {
-        $model = new TestModel2(1);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 1]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
         $driver->shouldReceive('deleteModel')
@@ -963,6 +971,35 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $query = TestModel::where(['name' => 'Bob']);
 
         $this->assertInstanceOf('Pulsar\Query', $query);
+    }
+
+    public function testFind()
+    {
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $driver->shouldReceive('loadModel')
+               ->andReturn(['id' => 100, 'answer' => 42])
+               ->once();
+
+        TestModel::setDriver($driver);
+
+        $model = TestModel::find(100);
+        $this->assertInstanceOf('TestModel', $model);
+        $this->assertEquals(100, $model->id());
+        $this->assertEquals(42, $model->answer);
+    }
+
+    public function testFindFail()
+    {
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $driver->shouldReceive('loadModel')
+               ->andReturn(false)
+               ->once();
+
+        TestModel::setDriver($driver);
+
+        $this->assertFalse(TestModel::find(101));
     }
 
     public function testTotalRecords()
@@ -1001,28 +1038,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testExists()
     {
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('totalRecords')
-               ->andReturn(1);
-
-        TestModel2::setDriver($driver);
-
-        $model = new TestModel2(12);
-        $this->assertTrue($model->exists());
-    }
-
-    public function testNotExists()
-    {
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('totalRecords')
-               ->andReturn(0);
-
-        TestModel2::setDriver($driver);
-
-        $model = new TestModel2(12);
+        $model = new TestModel();
         $this->assertFalse($model->exists());
+
+        $model = new TestModel();
+        $model->refreshWith(['id' => 12]);
+        $this->assertTrue($model->exists());
     }
 
     /////////////////////////////
@@ -1088,31 +1109,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(TestModel2::isRelationship('person_id'));
     }
 
-    public function testRelation()
-    {
-        $this->markTestIncomplete();
-        $model = new TestModel();
-        $model->relation = 2;
-
-        $relation = $model->relation('relation');
-        $this->assertInstanceOf('TestModel2', $relation);
-        $this->assertEquals(2, $relation->id());
-
-        // test if relation model is cached
-        $relation->test = 'hello';
-        $relation2 = $model->relation('relation');
-        $this->assertEquals('hello', $relation2->test);
-
-        // reset the relation
-        $model->relation = 3;
-        $this->assertEquals(3, $model->relation('relation')->id());
-
-        // check other methods for thorougness...
-        unset($model->relation);
-        $model->relation = 4;
-        $this->assertEquals(4, $model->relation('relation')->id());
-    }
-
     public function testGetRelationship()
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
@@ -1163,9 +1159,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $model = new TestModel2();
         $this->assertEquals($model, $model->refresh());
-        $this->assertEquals($model, $model->load());
 
-        $model = new TestModel2(12);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 12]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
@@ -1188,7 +1184,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         TestModel2::setDriver($driver);
 
-        $model = new TestModel2(12);
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 12]);
         $this->assertEquals($model, $model->refresh());
     }
 }

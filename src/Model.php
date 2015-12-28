@@ -77,11 +77,6 @@ abstract class Model implements \ArrayAccess
     protected static $dispatchers;
 
     /**
-     * @var number|string|bool
-     */
-    protected $_id;
-
-    /**
      * @var \Pimple\Container
      */
     protected $app;
@@ -95,6 +90,11 @@ abstract class Model implements \ArrayAccess
      * @var array
      */
     protected $_unsaved = [];
+
+    /**
+     * @var bool
+     */
+    protected $_exists = false;
 
     /**
      * @var \Infuse\ErrorStack
@@ -168,37 +168,12 @@ abstract class Model implements \ArrayAccess
     /**
      * Creates a new model object.
      *
-     * @param array|string|Model|false $id     ordered array of ids or comma-separated id string
-     * @param array                    $values optional key-value map to pre-seed model
+     * @param array $values values to fill model with
      */
-    public function __construct($id = false, array $values = [])
+    public function __construct(array $values = [])
     {
-        // initialize the model
-        $this->app = self::$injectedApp;
         $this->init();
-
-        // TODO need to store the id as an array
-        // instead of a string to maintain type integrity
-        if (is_array($id)) {
-            // A model can be supplied as a primary key
-            foreach ($id as &$el) {
-                if ($el instanceof self) {
-                    $el = $el->id();
-                }
-            }
-
-            $id = implode(',', $id);
-        // A model can be supplied as a primary key
-        } elseif ($id instanceof self) {
-            $id = $id->id();
-        }
-
-        $this->_id = $id;
-
-        // load any given values
-        if (count($values) > 0) {
-            $this->refreshWith($values);
-        }
+        $this->_values = $values;
     }
 
     /**
@@ -206,6 +181,8 @@ abstract class Model implements \ArrayAccess
      */
     private function init()
     {
+        $this->app = self::$injectedApp;
+
         // ensure the initialize function is called only once
         $k = get_called_class();
         if (!isset(self::$initialized[$k])) {
@@ -225,9 +202,6 @@ abstract class Model implements \ArrayAccess
      */
     protected function initialize()
     {
-        // load the driver
-        static::getDriver();
-
         // add in the default ID property
         if (static::$ids == [self::DEFAULT_ID_PROPERTY] && !isset(static::$properties[self::DEFAULT_ID_PROPERTY])) {
             static::$properties[self::DEFAULT_ID_PROPERTY] = self::$defaultIDProperty;
@@ -283,10 +257,24 @@ abstract class Model implements \ArrayAccess
      * Gets the driver for all models.
      *
      * @return Model\Driver\DriverInterface
+     *
+     * @throws BadMethodCallException
      */
     public static function getDriver()
     {
+        if (!self::$driver) {
+            throw new BadMethodCallException('A model driver has not been set yet.');
+        }
+
         return self::$driver;
+    }
+
+    /**
+     * Clears the driver for all models.
+     */
+    public static function clearDriver()
+    {
+        self::$driver = null;
     }
 
     /**
@@ -307,11 +295,19 @@ abstract class Model implements \ArrayAccess
     /**
      * Gets the model ID.
      *
-     * @return string|number|false ID
+     * @return string|number|null ID
      */
     public function id()
     {
-        return $this->_id;
+        $ids = $this->ids();
+
+        // if a single ID then return it
+        if (count($ids) === 1) {
+            return reset($ids);
+        }
+
+        // if multiple IDs then return a comma-separated list
+        return implode(',', $ids);
     }
 
     /**
@@ -321,21 +317,7 @@ abstract class Model implements \ArrayAccess
      */
     public function ids()
     {
-        $return = [];
-
-        // match up id values from comma-separated id string with property names
-        $ids = explode(',', $this->_id);
-        $ids = array_reverse($ids);
-
-        // TODO need to store the id as an array
-        // instead of a string to maintain type integrity
-        foreach (static::$ids as $k => $f) {
-            $id = (count($ids) > 0) ? array_pop($ids) : false;
-
-            $return[$f] = $id;
-        }
-
-        return $return;
+        return $this->get(static::$ids);
     }
 
     /////////////////////////////
@@ -349,7 +331,7 @@ abstract class Model implements \ArrayAccess
      */
     public function __toString()
     {
-        return get_called_class().'('.$this->_id.')';
+        return get_called_class().'('.$this->id().')';
     }
 
     /**
@@ -386,13 +368,14 @@ abstract class Model implements \ArrayAccess
             throw new BadMethodCallException("Cannot set the `$name` property because it is a relationship");
         }
 
-        // call any mutators
-        $mutator = self::getMutator($name);
-        if ($mutator) {
+        // set using any mutators
+        if ($mutator = self::getMutator($name)) {
             $this->_unsaved[$name] = $this->$mutator($value);
         } else {
             $this->_unsaved[$name] = $value;
         }
+
+        return $this;
     }
 
     /**
@@ -488,9 +471,30 @@ abstract class Model implements \ArrayAccess
      *
      * @return array
      */
-    public static function getIDProperties()
+    public static function getIdProperties()
     {
         return static::$ids;
+    }
+
+    /**
+     * Builds an existing model instance given a single ID value or
+     * ordered array of ID values.
+     *
+     * @param mixed $id
+     *
+     * @return Model
+     */
+    public static function buildFromId($id)
+    {
+        $ids = [];
+        $id = (array) $id;
+        foreach (static::$ids as $j => $k) {
+            $ids[$k] = $id[$j];
+        }
+
+        $model = new static($ids);
+
+        return $model;
     }
 
     /**
@@ -584,7 +588,7 @@ abstract class Model implements \ArrayAccess
      */
     public function save()
     {
-        if ($this->_id === false) {
+        if (!$this->_exists) {
             return $this->create();
         }
 
@@ -602,7 +606,7 @@ abstract class Model implements \ArrayAccess
      */
     public function create(array $data = [])
     {
-        if ($this->_id !== false) {
+        if ($this->_exists) {
             throw new BadMethodCallException('Cannot call create() on an existing model');
         }
 
@@ -630,11 +634,10 @@ abstract class Model implements \ArrayAccess
         $insertArray = [];
         foreach ($this->_unsaved as $name => $value) {
             // exclude if value does not map to a property
-            if (!isset(static::$properties[$name])) {
+            $property = static::getProperty($name);
+            if ($property === null) {
                 continue;
             }
-
-            $property = static::$properties[$name];
 
             // cannot insert immutable values
             // (unless using the default value)
@@ -654,16 +657,17 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        $created = self::$driver->createModel($this, $insertArray);
+        $created = self::getDriver()->createModel($this, $insertArray);
 
         if ($created) {
             // determine the model's new ID
-            $this->_id = $this->getNewID();
+            $ids = $this->getNewIds();
 
             // NOTE clear the local cache before the model.created
             // event so that fetching values forces a reload
-            // from the storage layer
+            // from the data layer
             $this->clearCache();
+            $this->_values = $ids;
 
             // dispatch the model.created event
             $event = $this->dispatch(ModelEvent::CREATED);
@@ -688,10 +692,14 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Fetches property values from the model.
+     * Gets property values from the model.
      *
-     * This method looks up values in this order:
-     * IDs, local cache, unsaved values, storage layer, defaults
+     * This method looks up values from these locations in this
+     * precedence order (least important to most important):
+     *  1. defaults
+     *  2. data layer
+     *  3. local cache
+     *  4. unsaved values
      *
      * @param array $properties list of property names to fetch values of
      *
@@ -699,8 +707,8 @@ abstract class Model implements \ArrayAccess
      */
     public function get(array $properties)
     {
-        // load the values from the IDs and local model cache
-        $values = array_replace($this->ids(), $this->_values);
+        // load the values from the local model cache
+        $values = $this->_values;
 
         // unless specified, use any unsaved values
         $ignoreUnsaved = $this->_ignoreUnsaved;
@@ -710,7 +718,7 @@ abstract class Model implements \ArrayAccess
             $values = array_replace($values, $this->_unsaved);
         }
 
-        // attempt to load any missing values from the storage layer
+        // attempt to load any missing values from the data layer
         $missing = array_diff($properties, array_keys($values));
         if (count($missing) > 0) {
             // load values for the model
@@ -746,8 +754,8 @@ abstract class Model implements \ArrayAccess
             if (array_key_exists($k, $values)) {
                 $response[$k] = $values[$k];
             // set any missing values to the default value
-            } elseif (static::hasProperty($k)) {
-                $response[$k] = $this->_values[$k] = $this->getPropertyDefault(static::$properties[$k]);
+            } elseif ($property = static::getProperty($k)) {
+                $response[$k] = $this->_values[$k] = $this->getPropertyDefault($property);
             // throw an exception for non-properties that do not
             // have an accessor
             } elseif (!$accessor) {
@@ -767,26 +775,24 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Gets the ID for a newly created model.
+     * Gets the IDs for a newly created model.
      *
      * @return string
      */
-    protected function getNewID()
+    protected function getNewIds()
     {
         $ids = [];
         foreach (static::$ids as $k) {
             // attempt use the supplied value if the ID property is mutable
             $property = static::getProperty($k);
             if (in_array($property['mutable'], [self::MUTABLE, self::MUTABLE_CREATE_ONLY]) && isset($this->_unsaved[$k])) {
-                $ids[] = $this->_unsaved[$k];
+                $ids[$k] = $this->_unsaved[$k];
             } else {
-                $ids[] = self::$driver->getCreatedID($this, $k);
+                $ids[$k] = self::getDriver()->getCreatedID($this, $k);
             }
         }
 
-        // TODO need to store the id as an array
-        // instead of a string to maintain type integrity
-        return (count($ids) > 1) ? implode(',', $ids) : $ids[0];
+        return $ids;
     }
 
     /**
@@ -824,7 +830,7 @@ abstract class Model implements \ArrayAccess
      */
     public function set(array $data = [])
     {
-        if ($this->_id === false) {
+        if (!$this->_exists) {
             throw new BadMethodCallException('Can only call set() on an existing model');
         }
 
@@ -851,11 +857,10 @@ abstract class Model implements \ArrayAccess
         $updateArray = [];
         foreach ($data as $name => $value) {
             // exclude if value does not map to a property
-            if (!isset(static::$properties[$name])) {
+            $property = static::getProperty($name);
+            if ($property === null) {
                 continue;
             }
-
-            $property = static::$properties[$name];
 
             // can only modify mutable properties
             if ($property['mutable'] != self::MUTABLE) {
@@ -870,12 +875,12 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        $updated = self::$driver->updateModel($this, $updateArray);
+        $updated = self::getDriver()->updateModel($this, $updateArray);
 
         if ($updated) {
             // NOTE clear the local cache before the model.updated
             // event so that fetching values forces a reload
-            // from the storage layer
+            // from the data layer
             $this->clearCache();
 
             // dispatch the model.updated event
@@ -895,7 +900,7 @@ abstract class Model implements \ArrayAccess
      */
     public function delete()
     {
-        if ($this->_id === false) {
+        if (!$this->_exists) {
             throw new BadMethodCallException('Can only call delete() on an existing model');
         }
 
@@ -905,7 +910,7 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        $deleted = self::$driver->deleteModel($this);
+        $deleted = self::getDriver()->deleteModel($this);
 
         if ($deleted) {
             // dispatch the model.deleted event
@@ -916,7 +921,7 @@ abstract class Model implements \ArrayAccess
 
             // NOTE clear the local cache before the model.deleted
             // event so that fetching values forces a reload
-            // from the storage layer
+            // from the data layer
             $this->clearCache();
         }
 
@@ -943,6 +948,25 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Finds a single instance of a model given it's ID.
+     *
+     * @param mixed $id
+     *
+     * @return Model|false
+     */
+    public static function find($id)
+    {
+        $model = static::buildFromId($id);
+        $values = self::getDriver()->loadModel($model);
+
+        if (!is_array($values)) {
+            return false;
+        }
+
+        return $model->refreshWith($values);
+    }
+
+    /**
      * Gets the toal number of records matching an optional criteria.
      *
      * @param array $where criteria
@@ -958,35 +982,27 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Checks if the model exists in the database.
+     * Checks if the model exists.
      *
      * @return bool
      */
     public function exists()
     {
-        return static::totalRecords($this->ids()) == 1;
+        return $this->_exists;
     }
 
     /**
-     * @deprecated alias for refresh()
-     */
-    public function load()
-    {
-        return $this->refresh();
-    }
-
-    /**
-     * Loads the model from the storage layer.
+     * Loads the model from the data layer.
      *
      * @return self
      */
     public function refresh()
     {
-        if ($this->_id === false) {
+        if (!$this->_exists) {
             return $this;
         }
 
-        $values = self::$driver->loadModel($this);
+        $values = self::getDriver()->loadModel($this);
 
         if (!is_array($values)) {
             return $this;
@@ -996,7 +1012,7 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Loads values into the model.
+     * Loads values into the model retrieved from the data layer.
      *
      * @param array $values values
      *
@@ -1004,6 +1020,7 @@ abstract class Model implements \ArrayAccess
      */
     public function refreshWith(array $values)
     {
+        $this->_exists = true;
         $this->_values = $values;
 
         return $this;
@@ -1297,7 +1314,7 @@ abstract class Model implements \ArrayAccess
         list($valid, $value) = $this->validate($property, $propertyName, $value);
 
         // unique?
-        if ($valid && $property['unique'] && ($this->_id === false || $value != $this->ignoreUnsaved()->$propertyName)) {
+        if ($valid && $property['unique'] && (!$this->_exists || $value != $this->ignoreUnsaved()->$propertyName)) {
             $valid = $this->checkUniqueness($property, $propertyName, $value);
         }
 
@@ -1371,7 +1388,7 @@ abstract class Model implements \ArrayAccess
         $hasRequired = true;
         foreach (static::$properties as $name => $property) {
             if ($property['required'] && !isset($values[$name])) {
-                $property = static::$properties[$name];
+                $property = static::getProperty($name);
                 $this->getErrors()->push([
                     'error' => self::ERROR_REQUIRED_FIELD_MISSING,
                     'params' => [
