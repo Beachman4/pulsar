@@ -1002,6 +1002,37 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(TestModel::find(101));
     }
 
+    public function testFindOrFail()
+    {
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $driver->shouldReceive('loadModel')
+               ->andReturn(['id' => 100, 'answer' => 42])
+               ->once();
+
+        TestModel::setDriver($driver);
+
+        $model = TestModel::findOrFail(100);
+        $this->assertInstanceOf('TestModel', $model);
+        $this->assertEquals(100, $model->id());
+        $this->assertEquals(42, $model->answer);
+    }
+
+    public function testFindOrFailNotFound()
+    {
+        $this->setExpectedException('Pulsar\Exception\NotFoundException');
+
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $driver->shouldReceive('loadModel')
+               ->andReturn(false)
+               ->once();
+
+        TestModel::setDriver($driver);
+
+        $this->assertFalse(TestModel::findOrFail(101));
+    }
+
     public function testTotalRecords()
     {
         $query = TestModel2::query();

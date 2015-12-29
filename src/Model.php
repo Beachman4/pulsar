@@ -15,6 +15,7 @@ use ICanBoogie\Inflector;
 use Infuse\ErrorStack;
 use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
+use Pulsar\Exception\NotFoundException;
 use Pulsar\Relation\HasOne;
 use Pulsar\Relation\BelongsTo;
 use Pulsar\Relation\HasMany;
@@ -964,6 +965,25 @@ abstract class Model implements \ArrayAccess
         }
 
         return $model->refreshWith($values);
+    }
+
+    /**
+     * Finds a single instance of a model given it's ID or throws an exception.
+     *
+     * @param mixed $id
+     *
+     * @return Model|false
+     *
+     * @throws ModelNotFoundException when a model could not be found
+     */
+    public static function findOrFail($id)
+    {
+        $model = static::find($id);
+        if (!$model) {
+            throw new NotFoundException('Could not find the requested '.static::modelName());
+        }
+
+        return $model;
     }
 
     /**
