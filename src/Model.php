@@ -12,7 +12,6 @@ namespace Pulsar;
 
 use BadMethodCallException;
 use ICanBoogie\Inflector;
-use Infuse\ErrorStack;
 use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
 use Pulsar\Exception\DriverMissingException;
@@ -99,7 +98,7 @@ abstract class Model implements \ArrayAccess
     protected $_exists = false;
 
     /**
-     * @var \Infuse\ErrorStack
+     * @var Errors
      */
     protected $_errors;
 
@@ -1301,12 +1300,12 @@ abstract class Model implements \ArrayAccess
      * Gets the error stack for this model instance. Used to
      * keep track of validation errors.
      *
-     * @return \Infuse\ErrorStack
+     * @return Errors
      */
     public function getErrors()
     {
         if (!$this->_errors) {
-            $this->_errors = new ErrorStack($this->app);
+            $this->_errors = new Errors($this->app);
         }
 
         return $this->_errors;

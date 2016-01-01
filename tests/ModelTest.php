@@ -324,7 +324,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $model = new TestModel();
         $stack = $model->getErrors();
-        $this->assertInstanceOf('Infuse\ErrorStack', $stack);
+        $this->assertInstanceOf('Pulsar\Errors', $stack);
         $this->assertEquals($stack, $model->getErrors());
     }
 
