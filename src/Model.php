@@ -173,15 +173,7 @@ abstract class Model implements \ArrayAccess
      */
     public function __construct(array $values = [])
     {
-        $this->init();
         $this->_values = $values;
-    }
-
-    /**
-     * Performs initialization on this model.
-     */
-    private function init()
-    {
         $this->app = self::$injectedApp;
 
         // ensure the initialize function is called only once
@@ -325,71 +317,26 @@ abstract class Model implements \ArrayAccess
     // Magic Methods
     /////////////////////////////
 
-    /**
-     * Converts the model into a string.
-     *
-     * @return string
-     */
     public function __toString()
     {
         return get_called_class().'('.$this->id().')';
     }
 
-    /**
-     * Shortcut to a get() call for a given property.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     */
     public function __get($name)
     {
         return array_values($this->get([$name]))[0];
     }
 
-    /**
-     * Sets an unsaved value.
-     *
-     * @param string $name
-     * @param mixed  $value
-     *
-     * @throws BadMethodCallException
-     */
     public function __set($name, $value)
     {
-        if (static::isRelationship($name)) {
-            throw new BadMethodCallException("Cannot set the `$name` property because it is a relationship");
-        }
-
-        // set using any mutators
-        if ($mutator = self::getMutator($name)) {
-            $this->_unsaved[$name] = $this->$mutator($value);
-        } else {
-            $this->_unsaved[$name] = $value;
-        }
-
-        return $this;
+        $this->setValue($name, $value);
     }
 
-    /**
-     * Checks if an unsaved value or property exists by this name.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
     public function __isset($name)
     {
         return array_key_exists($name, $this->_unsaved) || static::hasProperty($name);
     }
 
-    /**
-     * Unsets an unsaved value.
-     *
-     * @param string $name
-     *
-     * @throws BadMethodCallException
-     */
     public function __unset($name)
     {
         if (static::isRelationship($name)) {
@@ -399,6 +346,14 @@ abstract class Model implements \ArrayAccess
         if (array_key_exists($name, $this->_unsaved)) {
             unset($this->_unsaved[$name]);
         }
+    }
+
+    public static function __callStatic($name, $parameters)
+    {
+        // Any calls to unkown static methods should be deferred to
+        // the query. This allows calls like User::where()
+        // to replace User::query()->where().
+        return call_user_func_array([static::query(), $name], $parameters);
     }
 
     /////////////////////////////
@@ -423,14 +378,6 @@ abstract class Model implements \ArrayAccess
     public function offsetUnset($offset)
     {
         unset($this->$offset);
-    }
-
-    public static function __callStatic($name, $parameters)
-    {
-        // Any calls to unkown static methods should be deferred to
-        // the query. This allows calls like User::where()
-        // to replace User::query()->where().
-        return call_user_func_array([static::query(), $name], $parameters);
     }
 
     /////////////////////////////
@@ -589,6 +536,30 @@ abstract class Model implements \ArrayAccess
     /////////////////////////////
     // Values
     /////////////////////////////
+
+    /**
+     * Sets an unsaved value.
+     *
+     * @param string $name
+     * @param mixed  $value
+     *
+     * @throws BadMethodCallException when setting a relationship
+     */
+    public function setValue($name, $value)
+    {
+        if (static::isRelationship($name)) {
+            throw new BadMethodCallException("Cannot set the `$name` property because it is a relationship");
+        }
+
+        // set using any mutators
+        if ($mutator = self::getMutator($name)) {
+            $this->_unsaved[$name] = $this->$mutator($value);
+        } else {
+            $this->_unsaved[$name] = $value;
+        }
+
+        return $this;
+    }
 
     /**
      * Ignores unsaved values when fetching the next value.
