@@ -138,7 +138,8 @@ class TestModel2 extends Model
 
     protected static $autoTimestamps;
     protected static $relationships = ['person'];
-    protected static $hidden = ['validate2', 'hidden', 'person', 'array', 'object', 'mutable_create_only'];
+    protected static $hidden = ['validate2', 'hidden', 'person_id', 'array', 'object', 'mutable_create_only'];
+    protected static $appended = ['person'];
 
     public static $query;
 

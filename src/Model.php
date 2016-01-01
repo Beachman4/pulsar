@@ -344,15 +344,7 @@ abstract class Model implements \ArrayAccess
      */
     public function __get($name)
     {
-        // get relationship values
-        if (static::isRelationship($name)) {
-            return $this->loadRelationship($name);
-        }
-
-        // get property values
-        $result = $this->get([$name]);
-
-        return reset($result);
+        return array_values($this->get([$name]))[0];
     }
 
     /**
@@ -638,32 +630,35 @@ abstract class Model implements \ArrayAccess
         }
 
         // build the response
-        $response = [];
+        $result = [];
         foreach ($properties as $k) {
             $accessor = self::getAccessor($k);
 
             // use the supplied value if it's available
             if (array_key_exists($k, $values)) {
-                $response[$k] = $values[$k];
+                $result[$k] = $values[$k];
+            // get relationship values
+            } elseif (static::isRelationship($k)) {
+                $result[$k] = $this->loadRelationship($k);
             // set any missing values to the default value
             } elseif ($property = static::getProperty($k)) {
-                $response[$k] = $this->_values[$k] = self::getDefaultValueFor($property);
+                $result[$k] = $this->_values[$k] = self::getDefaultValueFor($property);
             // throw an exception for non-properties that do not
             // have an accessor
             } elseif (!$accessor) {
                 throw new InvalidArgumentException(static::modelName().' does not have a `'.$k.'` property.');
             // otherwise the value is considered null
             } else {
-                $response[$k] = null;
+                $result[$k] = null;
             }
 
             // call any accessors
             if ($accessor) {
-                $response[$k] = $this->$accessor($response[$k]);
+                $result[$k] = $this->$accessor($result[$k]);
             }
         }
 
-        return $response;
+        return $result;
     }
 
     /**
@@ -686,6 +681,13 @@ abstract class Model implements \ArrayAccess
 
         // get the values for the properties
         $result = $this->get($properties);
+
+        // convert any models to arrays
+        foreach ($result as &$value) {
+            if ($value instanceof self) {
+                $value = $value->toArray();
+            }
+        }
 
         return $result;
     }

@@ -451,6 +451,35 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $model->toArray());
     }
 
+    public function testToArrayWithRelationship()
+    {
+        $model = new TestModel2(['id' => 1, 'id2' => 2, 'person_id' => 3]);
+
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $driver->shouldReceive('queryModels')
+               ->andReturn([['id' => 3, 'name' => 'Bob', 'email' => 'bob@example.com']]);
+
+        TestModel2::setDriver($driver);
+
+        $expected = [
+            'id' => 1,
+            'id2' => 2,
+            'default' => 'some default value',
+            'validate' => null,
+            'unique' => null,
+            'required' => null,
+            'created_at' => null,
+            'updated_at' => null,
+            'person' => [
+                'id' => 3,
+                'name' => 'Bob',
+                'email' => 'bob@example.com',
+            ],
+        ];
+
+        $this->assertEquals($expected, $model->toArray());
+    }
+
     public function testArrayAccess()
     {
         $model = new TestModel();
