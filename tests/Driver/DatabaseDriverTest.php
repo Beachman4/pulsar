@@ -122,33 +122,6 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(1, $driver->getCreatedID($model, 'id'));
     }
 
-    public function testLoadModel()
-    {
-        // select query mock
-        $one = Mockery::mock();
-        $one->shouldReceive('one')
-            ->andReturn(['name' => 'John']);
-        $where = Mockery::mock();
-        $where->shouldReceive('where')
-              ->withArgs([['id' => 12]])
-              ->andReturn($one);
-        $from = Mockery::mock();
-        $from->shouldReceive('from')
-             ->withArgs(['People'])
-             ->andReturn($where);
-        $db = Mockery::mock('JAQB\QueryBuilder');
-        $db->shouldReceive('select')
-           ->andReturn($from)
-           ->once();
-
-        self::$app['db'] = $db;
-
-        $driver = new DatabaseDriver(self::$app);
-
-        $model = Person::buildFromId(12);
-        $this->assertEquals(['name' => 'John'], $driver->loadModel($model));
-    }
-
     public function testUpdateModel()
     {
         // update query mock
@@ -241,7 +214,7 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         // select query mock
         $all = Mockery::mock();
         $all->shouldReceive('all')
-            ->andReturn([['test' => true]]);
+            ->andReturn([['name' => 'Bob']]);
         $all->shouldReceive('join')
              ->withArgs(['Groups', 'People.group=Groups.id'])
              ->once();
@@ -271,6 +244,6 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $driver = new DatabaseDriver(self::$app);
         Person::setDriver($driver);
 
-        $this->assertEquals([['test' => true]], $driver->queryModels($query));
+        $this->assertEquals([['name' => 'Bob']], $driver->queryModels($query));
     }
 }

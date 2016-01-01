@@ -43,18 +43,12 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
 
     public function testNoPool()
     {
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['id' => 5, 'answer' => 42]);
-        CacheableModel::setDriver($driver);
-
         CacheableModel::setCachePool(null);
         $model = new CacheableModel();
         $model->refreshWith(['id' => 5]);
         $this->assertNull($model->getCachePool());
         $this->assertNull($model->getCacheItem());
-        $this->assertEquals($model, $model->refresh());
-        $this->assertEquals($model, $model->cache());
+        $this->assertEquals($model, $model->refreshWith(['id' => 5, 'answer' => 42]));
 
         $model = new CacheableModel();
         $this->assertEquals($model, $model->refresh());
@@ -98,8 +92,8 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['id' => 100, 'answer' => 42])
+        $driver->shouldReceive('queryModels')
+               ->andReturn([['id' => 100, 'answer' => 42]])
                ->once();
 
         CacheableModel::setDriver($driver);

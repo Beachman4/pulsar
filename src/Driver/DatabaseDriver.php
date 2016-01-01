@@ -48,22 +48,6 @@ class DatabaseDriver implements DriverInterface
         return $this->unserializeValue($model::getProperty($propertyName), $id);
     }
 
-    public function loadModel(Model $model)
-    {
-        $tablename = $this->getTablename($model);
-
-        $row = $this->app['db']->select('*')
-            ->from($tablename)
-            ->where($model->ids())
-            ->one();
-
-        if (is_array($row)) {
-            $row = $this->unserialize($row, $model::getProperties());
-        }
-
-        return $row;
-    }
-
     public function updateModel(Model $model, array $parameters)
     {
         if (count($parameters) == 0) {

@@ -898,13 +898,16 @@ abstract class Model implements \ArrayAccess
             return $this;
         }
 
-        $values = self::getDriver()->loadModel($this);
+        $query = static::query();
+        $query->where($this->ids());
 
-        if (!is_array($values)) {
+        $values = self::getDriver()->queryModels($query);
+
+        if (count($values) === 0) {
             return $this;
         }
 
-        return $this->refreshWith($values);
+        return $this->refreshWith($values[0]);
     }
 
     /**
@@ -959,18 +962,13 @@ abstract class Model implements \ArrayAccess
      *
      * @param mixed $id
      *
-     * @return Model|false
+     * @return Model|null
      */
     public static function find($id)
     {
         $model = static::buildFromId($id);
-        $values = self::getDriver()->loadModel($model);
 
-        if (!is_array($values)) {
-            return false;
-        }
-
-        return $model->refreshWith($values);
+        return static::query()->where($model->ids())->first();
     }
 
     /**

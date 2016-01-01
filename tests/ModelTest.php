@@ -877,8 +877,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('totalRecords')
                ->andReturn(0);
 
-        $driver->shouldReceive('loadModel');
-
         $driver->shouldReceive('updateModel')
                ->andReturn(true);
 
@@ -1012,8 +1010,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['id' => 100, 'answer' => 42])
+        $driver->shouldReceive('queryModels')
+               ->andReturnUsing(function ($query) {
+                    $this->assertEquals(['id' => 100], $query->getWhere());
+
+                    return [['id' => 100, 'answer' => 42]];
+               })
                ->once();
 
         TestModel::setDriver($driver);
@@ -1028,21 +1030,21 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(false)
+        $driver->shouldReceive('queryModels')
+               ->andReturn([])
                ->once();
 
         TestModel::setDriver($driver);
 
-        $this->assertFalse(TestModel::find(101));
+        $this->assertNull(TestModel::find(101));
     }
 
     public function testFindOrFail()
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['id' => 100, 'answer' => 42])
+        $driver->shouldReceive('queryModels')
+               ->andReturn([['id' => 100, 'answer' => 42]])
                ->once();
 
         TestModel::setDriver($driver);
@@ -1059,13 +1061,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(false)
+        $driver->shouldReceive('queryModels')
+               ->andReturn([])
                ->once();
 
         TestModel::setDriver($driver);
 
-        $this->assertFalse(TestModel::findOrFail(101));
+        $this->assertNull(TestModel::findOrFail(101));
     }
 
     public function testTotalRecords()
@@ -1227,26 +1229,30 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($model, $model->refresh());
 
         $model = new TestModel2();
-        $model->refreshWith(['id' => 12]);
+        $model->refreshWith(['id' => 12, 'id2' => 13]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->withArgs([$model])
-               ->andReturn([])
+        $driver->shouldReceive('queryModels')
+               ->andReturnUsing(function ($query) {
+                    $this->assertEquals(['id' => 12, 'id2' => 13], $query->getWhere());
+
+                    return [['unique' => 'value']];
+               })
                ->once();
 
         TestModel2::setDriver($driver);
 
         $this->assertEquals($model, $model->refresh());
+        $this->assertEquals('value', $model->unique);
     }
 
     public function testRefreshFail()
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(false);
+        $driver->shouldReceive('queryModels')
+               ->andReturn([]);
 
         TestModel2::setDriver($driver);
 

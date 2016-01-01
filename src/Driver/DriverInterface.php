@@ -41,17 +41,6 @@ interface DriverInterface
     public function getCreatedID(Model $model, $propertyName);
 
     /**
-     * Loads a model.
-     *
-     * @param \Pulsar\Model $model
-     *
-     * @return array|false
-     *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
-     */
-    public function loadModel(Model $model);
-
-    /**
      * Updates a model.
      *
      * @param \Pulsar\Model $model
