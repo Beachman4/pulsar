@@ -48,9 +48,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($c, $model->getApp());
     }
 
-    public function testNoDriver()
+    public function testDriverMissing()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $this->setExpectedException('Pulsar\Exception\DriverMissingException');
         Model::clearDriver();
         Model::getDriver();
     }

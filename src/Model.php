@@ -15,6 +15,7 @@ use ICanBoogie\Inflector;
 use Infuse\ErrorStack;
 use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
+use Pulsar\Exception\DriverMissingException;
 use Pulsar\Exception\NotFoundException;
 use Pulsar\Relation\HasOne;
 use Pulsar\Relation\BelongsTo;
@@ -259,12 +260,12 @@ abstract class Model implements \ArrayAccess
      *
      * @return Model\Driver\DriverInterface
      *
-     * @throws BadMethodCallException
+     * @throws DriverMissingException
      */
     public static function getDriver()
     {
         if (!self::$driver) {
-            throw new BadMethodCallException('A model driver has not been set yet.');
+            throw new DriverMissingException('A model driver has not been set yet.');
         }
 
         return self::$driver;
@@ -974,7 +975,7 @@ abstract class Model implements \ArrayAccess
      *
      * @return Model|false
      *
-     * @throws ModelNotFoundException when a model could not be found
+     * @throws NotFoundException when a model could not be found
      */
     public static function findOrFail($id)
     {
