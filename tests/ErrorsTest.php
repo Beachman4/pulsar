@@ -40,7 +40,6 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         $error2 = [
             'error' => 'username_invalid',
             'message' => 'Username is invalid',
-            'context' => 'user.create',
             'params' => [
                 'field' => 'username', ], ];
 
@@ -57,29 +56,22 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         $expected1 = [
             'error' => 'some_error',
             'message' => 'Something is wrong',
-            'context' => '',
             'params' => [], ];
 
         $expected2 = [
             'error' => 'username_invalid',
             'message' => 'Username is invalid',
-            'context' => 'user.create',
             'params' => [
                 'field' => 'username', ], ];
 
         $expected3 = [
             'error' => 'some_error',
             'message' => 'some_error',
-            'context' => '',
             'params' => [], ];
 
         $errors = self::$stack->errors();
         $this->assertEquals(3, count($errors));
         $this->assertEquals([$expected1, $expected2, $expected3], $errors);
-
-        $errors = self::$stack->errors('user.create');
-        $this->assertEquals(1, count($errors));
-        $this->assertEquals([$expected2], $errors);
     }
 
     /**
@@ -97,10 +89,6 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $messages);
 
         $expected = ['Username is invalid'];
-
-        $messages = self::$stack->messages('user.create');
-        $this->assertEquals(1, count($messages));
-        $this->assertEquals($expected, $messages);
     }
 
     /**
@@ -111,7 +99,6 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         $expected = [
             'error' => 'username_invalid',
             'message' => 'Username is invalid',
-            'context' => 'user.create',
             'params' => [
                 'field' => 'username', ], ];
 
@@ -131,43 +118,6 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
 
         $this->assertFalse(self::$stack->has('non-existent'));
         $this->assertFalse(self::$stack->has('username', 'something'));
-    }
-
-    /**
-     * @depends testErrors
-     * @depends testMessages
-     */
-    public function testSetCurrentContext()
-    {
-        $this->assertEquals(self::$stack, self::$stack->setCurrentContext('test.context'));
-
-        $this->assertEquals(self::$stack, self::$stack->push(['error' => 'test_error']));
-
-        $expected = [
-            'error' => 'test_error',
-            'context' => 'test.context',
-            'params' => [],
-            'message' => 'test_error', ];
-        $this->assertEquals([$expected], self::$stack->errors('test.context'));
-    }
-
-    /**
-     * @depends testErrors
-     * @depends testMessages
-     */
-    public function testClearCurrentContext()
-    {
-        $this->assertEquals(self::$stack, self::$stack->clearCurrentContext());
-
-        $this->assertEquals(self::$stack, self::$stack->push(['error' => 'test_error']));
-
-        $expected = [
-            'error' => 'test_error',
-            'context' => '',
-            'params' => [],
-            'message' => 'test_error', ];
-        $errors = self::$stack->errors('');
-        $this->assertTrue(in_array($expected, $errors));
     }
 
     /**

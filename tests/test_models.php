@@ -99,6 +99,7 @@ class TestModel2 extends Model
         'validate' => [
             'validate' => 'email',
             'null' => true,
+            'title' => 'Email address',
         ],
         'validate2' => [
             'validate' => 'validate',

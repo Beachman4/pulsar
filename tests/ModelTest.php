@@ -201,6 +201,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
                 'required' => false,
+                'title' => 'Email address',
             ],
             'validate2' => [
                 'type' => Model::TYPE_STRING,
@@ -320,12 +321,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('getAccessorValue', TestModel::getAccessor('accessor'));
     }
 
-    public function testGetErrors()
+    public function testGetDefaultValueFor()
     {
-        $model = new TestModel();
-        $stack = $model->getErrors();
-        $this->assertInstanceOf('Pulsar\Errors', $stack);
-        $this->assertEquals($stack, $model->getErrors());
+        $this->assertNull(TestModel::getDefaultValueFor('id'));
+        $this->assertNull(TestModel::getDefaultValueFor('nonexistent_property'));
+        $this->assertEquals('default', TestModel::getDefaultValueFor(['default' => 'default']));
+        $this->assertEquals('some default value', TestModel2::getDefaultValueFor('default'));
     }
 
     /////////////////////////////
@@ -445,7 +446,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(42, $model->answer);
     }
 
-    public function testGetDefaultValue()
+    public function testGetDefaultFallback()
     {
         $model = new TestModel2(['id' => 12]);
 
@@ -726,7 +727,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel();
         $model->refreshWith(['id' => 10]);
 
-        $this->assertTrue($model->set([]));
+        $this->assertTrue($model->set());
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
@@ -736,10 +737,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         TestModel::setDriver($driver);
 
-        $this->assertTrue($model->set(['answer' => 42]));
+        $model->answer = 42;
+
+        $this->assertTrue($model->set());
     }
 
-    public function testSetWithSave()
+    public function testSetFromSave()
     {
         $model = new TestModel();
         $model->refreshWith(['id' => 10]);
@@ -756,7 +759,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($model->save());
     }
 
-    public function testSetMultiple()
+    public function testSetMassAssignment()
     {
         $model = new TestModel();
         $model->refreshWith(['id' => 11]);
@@ -791,10 +794,26 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         TestModel::setDriver($driver);
 
-        $this->assertTrue($model->set([
-            'id' => 432,
-            'mutable_create_only' => 'blah',
-        ]));
+        $model->id = 432;
+        $model->mutable_create_only = 'blah';
+
+        $this->assertTrue($model->set());
+    }
+
+    public function testSetFail()
+    {
+        $model = new TestModel();
+        $model->refreshWith(['id' => 10]);
+
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $driver->shouldReceive('updateModel')
+               ->andReturn(false);
+
+        TestModel::setDriver($driver);
+
+        $model->answer = 42;
+
+        $this->assertFalse($model->set());
     }
 
     public function testSetFailWithNoId()
@@ -802,7 +821,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->setExpectedException('BadMethodCallException');
 
         $model = new TestModel();
-        $this->assertFalse($model->set(['answer' => 42]));
+        $this->assertFalse($model->set());
     }
 
     public function testUpdatingListenerFail()
@@ -813,7 +832,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model = new TestModel();
         $model->refreshWith(['id' => 100]);
-        $this->assertFalse($model->set(['answer' => 42]));
+        $model->answer = 42;
+        $this->assertFalse($model->set());
     }
 
     public function testUpdatedListenerFail()
@@ -831,7 +851,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model = new TestModel();
         $model->refreshWith(['id' => 100]);
-        $this->assertFalse($model->set(['answer' => 42]));
+        $model->answer = 42;
+        $this->assertFalse($model->set());
     }
 
     public function testSetUnique()
@@ -853,7 +874,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model = new TestModel2();
         $model->refreshWith(['id' => 12]);
-        $this->assertTrue($model->set(['unique' => 'works']));
+        $model->unique = 'works';
+        $model->required = 'required';
+        $this->assertTrue($model->set());
 
         // validate query where statement
         $this->assertEquals(['unique' => 'works'], $query->getWhere());
@@ -863,25 +886,25 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
-        $driver->shouldReceive('loadModel')
-               ->andReturn(['unique' => 'works']);
-
         $driver->shouldReceive('updateModel')
                ->andReturn(true);
 
         TestModel2::setDriver($driver);
 
         $model = new TestModel2();
-        $model->refreshWith(['id' => 12]);
-        $this->assertTrue($model->set(['unique' => 'works']));
+        $model->refreshWith(['id' => 12, 'required' => true, 'unique' => 'works']);
+        $model->unique = 'works';
+        $this->assertTrue($model->set());
     }
 
     public function testSetInvalid()
     {
         $model = new TestModel2();
         $model->refreshWith(['id' => 15]);
+        $model->required = true;
+        $model->validate2 = 'invalid';
 
-        $this->assertFalse($model->set(['validate2' => 'invalid']));
+        $this->assertFalse($model->set());
         $this->assertCount(1, $model->getErrors());
     }
 
@@ -1218,5 +1241,49 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel2();
         $model->refreshWith(['id' => 12]);
         $this->assertEquals($model, $model->refresh());
+    }
+
+    /////////////////////////////
+    // Validation
+    /////////////////////////////
+
+    public function testGetErrors()
+    {
+        $model = new TestModel();
+        $stack = $model->getErrors();
+        $this->assertInstanceOf('Pulsar\Errors', $stack);
+        $this->assertEquals($stack, $model->getErrors());
+    }
+
+    public function testIsValid()
+    {
+        $model = new TestModel2();
+        $this->assertFalse($model->isValid());
+        $this->assertCount(1, $model->getErrors());
+        $expectedError = [
+            'error' => 'required_field_missing',
+            'message' => 'required_field_missing',
+            'params' => [
+                'field' => 'required',
+                'field_name' => 'Required',
+            ],
+        ];
+        $this->assertEquals($expectedError, $model->getErrors()[0]);
+
+        $model->required = true;
+        $this->assertTrue($model->isValid());
+
+        $model->validate = 'not an email address';
+        $this->assertFalse($model->isValid());
+        $this->assertCount(1, $model->getErrors());
+        $expectedError = [
+            'error' => 'validation_failed',
+            'message' => 'validation_failed',
+            'params' => [
+                'field' => 'validate',
+                'field_name' => 'Email address',
+            ],
+        ];
+        $this->assertEquals($expectedError, $model->getErrors()[0]);
     }
 }

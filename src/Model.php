@@ -578,6 +578,22 @@ abstract class Model implements \ArrayAccess
         return in_array($property, static::$relationships);
     }
 
+    /**
+     * Gets the default value for a property.
+     *
+     * @param string|array $property
+     *
+     * @return mixed
+     */
+    public static function getDefaultValueFor($property)
+    {
+        if (!is_array($property)) {
+            $property = self::getProperty($property);
+        }
+
+        return $property ? array_value($property, 'default') : null;
+    }
+
     /////////////////////////////
     // CRUD Operations
     /////////////////////////////
@@ -630,54 +646,43 @@ abstract class Model implements \ArrayAccess
             }
         }
 
-        // validate the values being saved
-        $validated = true;
-        $insertArray = [];
-        foreach ($this->_unsaved as $name => $value) {
-            // exclude if value does not map to a property
-            $property = static::getProperty($name);
-            if ($property === null) {
-                continue;
-            }
-
-            // cannot insert immutable values
-            // (unless using the default value)
-            if ($property['mutable'] == self::IMMUTABLE && $value !== $this->getPropertyDefault($property)) {
-                continue;
-            }
-
-            $validated = $validated && $this->filterAndValidate($property, $name, $value);
-            $insertArray[$name] = $value;
-        }
-
-        // the final validation check is to look for required fields
-        // it should be ran before returning (even if the validation
-        // has already failed) in order to build a complete list of
-        // validation errors
-        if (!$this->hasRequiredValues($insertArray) || !$validated) {
+        // validate the model
+        if (!$this->isValid()) {
             return false;
         }
 
-        $created = self::getDriver()->createModel($this, $insertArray);
-
-        if ($created) {
-            // determine the model's new ID
-            $ids = $this->getNewIds();
-
-            // NOTE clear the local cache before the model.created
-            // event so that fetching values forces a reload
-            // from the data layer
-            $this->clearCache();
-            $this->_values = $ids;
-
-            // dispatch the model.created event
-            $event = $this->dispatch(ModelEvent::CREATED);
-            if ($event->isPropagationStopped()) {
-                return false;
+        // build the insert array
+        $insertValues = [];
+        foreach ($this->_unsaved as $k => $value) {
+            // remove any non-existent or immutable properties
+            $property = static::getProperty($k);
+            if ($property === null || ($property['mutable'] == self::IMMUTABLE && $value !== self::getDefaultValueFor($property))) {
+                continue;
             }
+
+            $insertValues[$k] = $value;
         }
 
-        return $created;
+        if (!self::getDriver()->createModel($this, $insertValues)) {
+            return false;
+        }
+
+        // determine the model's new ID
+        $ids = $this->getNewIds();
+
+        // NOTE clear the local cache before the model.created
+        // event so that fetching values forces a reload
+        // from the data layer
+        $this->clearCache();
+        $this->_values = $ids;
+
+        // dispatch the model.created event
+        $event = $this->dispatch(ModelEvent::CREATED);
+        if ($event->isPropagationStopped()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -756,7 +761,7 @@ abstract class Model implements \ArrayAccess
                 $response[$k] = $values[$k];
             // set any missing values to the default value
             } elseif ($property = static::getProperty($k)) {
-                $response[$k] = $this->_values[$k] = $this->getPropertyDefault($property);
+                $response[$k] = $this->_values[$k] = self::getDefaultValueFor($property);
             // throw an exception for non-properties that do not
             // have an accessor
             } elseif (!$accessor) {
@@ -835,16 +840,15 @@ abstract class Model implements \ArrayAccess
             throw new BadMethodCallException('Can only call set() on an existing model');
         }
 
-        // not updating anything?
-        if (count($data) == 0) {
-            return true;
+        if (!empty($data)) {
+            foreach ($data as $k => $value) {
+                $this->$k = $value;
+            }
         }
 
-        // apply mutators
-        foreach ($data as $k => $value) {
-            if ($mutator = self::getMutator($k)) {
-                $data[$k] = $this->$mutator($value);
-            }
+        // not updating anything?
+        if (count($this->_unsaved) === 0) {
+            return true;
         }
 
         // dispatch the model.updating event
@@ -853,45 +857,39 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // validate the values being saved
-        $validated = true;
-        $updateArray = [];
-        foreach ($data as $name => $value) {
-            // exclude if value does not map to a property
-            $property = static::getProperty($name);
-            if ($property === null) {
-                continue;
-            }
-
-            // can only modify mutable properties
-            if ($property['mutable'] != self::MUTABLE) {
-                continue;
-            }
-
-            $validated = $validated && $this->filterAndValidate($property, $name, $value);
-            $updateArray[$name] = $value;
-        }
-
-        if (!$validated) {
+        // validate the model
+        if (!$this->isValid()) {
             return false;
         }
 
-        $updated = self::getDriver()->updateModel($this, $updateArray);
-
-        if ($updated) {
-            // NOTE clear the local cache before the model.updated
-            // event so that fetching values forces a reload
-            // from the data layer
-            $this->clearCache();
-
-            // dispatch the model.updated event
-            $event = $this->dispatch(ModelEvent::UPDATED);
-            if ($event->isPropagationStopped()) {
-                return false;
+        // build the update array
+        $updateValues = [];
+        foreach ($this->_unsaved as $k => $value) {
+            // remove any non-existent or immutable properties
+            $property = static::getProperty($k);
+            if ($property === null || $property['mutable'] != self::MUTABLE) {
+                continue;
             }
+
+            $updateValues[$k] = $value;
         }
 
-        return $updated;
+        if (!self::getDriver()->updateModel($this, $updateValues)) {
+            return false;
+        }
+
+        // clear the local cache before the model.updated
+        // event so that fetching values forces a reload
+        // from the data layer
+        $this->clearCache();
+
+        // dispatch the model.updated event
+        $event = $this->dispatch(ModelEvent::UPDATED);
+        if ($event->isPropagationStopped()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -1312,48 +1310,56 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Validates and marshals a value to storage.
+     * Checks if the model is valid in its current state.
      *
+     * @return bool
+     */
+    public function isValid()
+    {
+        // clear any previous errors
+        $this->getErrors()->clear();
+
+        $validated = true;
+        foreach ($this->_unsaved as $name => &$value) {
+            // nothing to check if the value does not map to a property
+            $property = static::getProperty($name);
+            if ($property === null) {
+                continue;
+            }
+
+            $validated = $this->validateValue($name, $property, $value) && $validated;
+        }
+
+        // finally we look for required fields
+        if (!$this->hasRequiredValues($this->_values + $this->_unsaved)) {
+            $validated = false;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Validates a given property.
+     *
+     * @param string $name
      * @param array  $property
-     * @param string $propertyName
      * @param mixed  $value
      *
      * @return bool
      */
-    private function filterAndValidate(array $property, $propertyName, &$value)
+    private function validateValue($name, array $property, &$value)
     {
         // assume empty string is a null value for properties
-        // that are marked as optionally-null
+        // that are marked as optionally-null.
+        // whenever a value is null this skips any validations
         if ($property['null'] && empty($value)) {
             $value = null;
 
             return true;
         }
 
-        // validate
-        list($valid, $value) = $this->validate($property, $propertyName, $value);
-
-        // unique?
-        if ($valid && $property['unique'] && (!$this->_exists || $value != $this->ignoreUnsaved()->$propertyName)) {
-            $valid = $this->checkUniqueness($property, $propertyName, $value);
-        }
-
-        return $valid;
-    }
-
-    /**
-     * Validates a value for a property.
-     *
-     * @param array  $property
-     * @param string $propertyName
-     * @param mixed  $value
-     *
-     * @return bool
-     */
-    private function validate(array $property, $propertyName, $value)
-    {
+        // run property validations
         $valid = true;
-
         if (isset($property['validate']) && is_callable($property['validate'])) {
             $valid = call_user_func_array($property['validate'], [$value]);
         } elseif (isset($property['validate'])) {
@@ -1364,30 +1370,37 @@ abstract class Model implements \ArrayAccess
             $this->getErrors()->push([
                 'error' => self::ERROR_VALIDATION_FAILED,
                 'params' => [
-                    'field' => $propertyName,
-                    'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($propertyName), ], ]);
+                    'field' => $name,
+                    'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
+
+            return false;
         }
 
-        return [$valid, $value];
+        // check uniqueness constraints
+        if ($property['unique'] && (!$this->_exists || $value != $this->ignoreUnsaved()->$name)) {
+            $valid = $this->checkUniqueness($name, $property, $value);
+        }
+
+        return $valid;
     }
 
     /**
-     * Checks if a value is unique for a property.
+     * Checks if a value is unique for that property.
      *
+     * @param string $name
      * @param array  $property
-     * @param string $propertyName
      * @param mixed  $value
      *
      * @return bool
      */
-    private function checkUniqueness(array $property, $propertyName, $value)
+    private function checkUniqueness($name, array $property, $value)
     {
-        if (static::totalRecords([$propertyName => $value]) > 0) {
+        if (static::totalRecords([$name => $value]) > 0) {
             $this->getErrors()->push([
                 'error' => self::ERROR_NOT_UNIQUE,
                 'params' => [
-                    'field' => $propertyName,
-                    'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($propertyName), ], ]);
+                    'field' => $name,
+                    'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
 
             return false;
         }
@@ -1420,17 +1433,5 @@ abstract class Model implements \ArrayAccess
         }
 
         return $hasRequired;
-    }
-
-    /**
-     * Gets the marshaled default value for a property (if set).
-     *
-     * @param string $property
-     *
-     * @return mixed
-     */
-    private function getPropertyDefault(array $property)
-    {
-        return array_value($property, 'default');
     }
 }
