@@ -95,7 +95,7 @@ abstract class Model implements \ArrayAccess
     /**
      * @var bool
      */
-    protected $_exists = false;
+    protected $_persisted = false;
 
     /**
      * @var Errors
@@ -595,7 +595,103 @@ abstract class Model implements \ArrayAccess
     }
 
     /////////////////////////////
-    // CRUD Operations
+    // Values
+    /////////////////////////////
+
+    /**
+     * Ignores unsaved values when fetching the next value.
+     *
+     * @return self
+     */
+    public function ignoreUnsaved()
+    {
+        $this->_ignoreUnsaved = true;
+
+        return $this;
+    }
+
+    /**
+     * Gets property values from the model.
+     *
+     * This method looks up values from these locations in this
+     * precedence order (least important to most important):
+     *  1. defaults
+     *  2. local values
+     *  3. unsaved values
+     *
+     * @param array $properties list of property names to fetch values of
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException when a property was requested not present in the values
+     */
+    public function get(array $properties)
+    {
+        // load the values from the local model cache
+        $values = $this->_values;
+
+        // unless specified, use any unsaved values
+        $ignoreUnsaved = $this->_ignoreUnsaved;
+        $this->_ignoreUnsaved = false;
+        if (!$ignoreUnsaved) {
+            $values = array_replace($values, $this->_unsaved);
+        }
+
+        // build the response
+        $response = [];
+        foreach ($properties as $k) {
+            $accessor = self::getAccessor($k);
+
+            // use the supplied value if it's available
+            if (array_key_exists($k, $values)) {
+                $response[$k] = $values[$k];
+            // set any missing values to the default value
+            } elseif ($property = static::getProperty($k)) {
+                $response[$k] = $this->_values[$k] = self::getDefaultValueFor($property);
+            // throw an exception for non-properties that do not
+            // have an accessor
+            } elseif (!$accessor) {
+                throw new InvalidArgumentException(static::modelName().' does not have a `'.$k.'` property.');
+            // otherwise the value is considered null
+            } else {
+                $response[$k] = null;
+            }
+
+            // call any accessors
+            if ($accessor) {
+                $response[$k] = $this->$accessor($response[$k]);
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Converts the model to an array.
+     *
+     * @return array model array
+     */
+    public function toArray()
+    {
+        // build the list of properties to retrieve
+        $properties = array_keys(static::$properties);
+
+        // remove any hidden properties
+        $hide = (property_exists($this, 'hidden')) ? static::$hidden : [];
+        $properties = array_diff($properties, $hide);
+
+        // add any appended properties
+        $append = (property_exists($this, 'appended')) ? static::$appended : [];
+        $properties = array_merge($properties, $append);
+
+        // get the values for the properties
+        $result = $this->get($properties);
+
+        return $result;
+    }
+
+    /////////////////////////////
+    // Persistence
     /////////////////////////////
 
     /**
@@ -605,7 +701,7 @@ abstract class Model implements \ArrayAccess
      */
     public function save()
     {
-        if (!$this->_exists) {
+        if (!$this->_persisted) {
             return $this->create();
         }
 
@@ -623,7 +719,7 @@ abstract class Model implements \ArrayAccess
      */
     public function create(array $data = [])
     {
-        if ($this->_exists) {
+        if ($this->_persisted) {
             throw new BadMethodCallException('Cannot call create() on an existing model');
         }
 
@@ -686,101 +782,6 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Ignores unsaved values when fetching the next value.
-     *
-     * @return self
-     */
-    public function ignoreUnsaved()
-    {
-        $this->_ignoreUnsaved = true;
-
-        return $this;
-    }
-
-    /**
-     * Gets property values from the model.
-     *
-     * This method looks up values from these locations in this
-     * precedence order (least important to most important):
-     *  1. defaults
-     *  2. data layer
-     *  3. local cache
-     *  4. unsaved values
-     *
-     * @param array $properties list of property names to fetch values of
-     *
-     * @return array
-     */
-    public function get(array $properties)
-    {
-        // load the values from the local model cache
-        $values = $this->_values;
-
-        // unless specified, use any unsaved values
-        $ignoreUnsaved = $this->_ignoreUnsaved;
-        $this->_ignoreUnsaved = false;
-
-        if (!$ignoreUnsaved) {
-            $values = array_replace($values, $this->_unsaved);
-        }
-
-        // attempt to load any missing values from the data layer
-        $missing = array_diff($properties, array_keys($values));
-        if (count($missing) > 0) {
-            // load values for the model
-            $this->refresh();
-            $values = array_replace($values, $this->_values);
-
-            // add back any unsaved values
-            if (!$ignoreUnsaved) {
-                $values = array_replace($values, $this->_unsaved);
-            }
-        }
-
-        return $this->buildGetResponse($properties, $values);
-    }
-
-    /**
-     * Builds a key-value map of the requested properties given a set of values.
-     *
-     * @param array $properties
-     * @param array $values
-     *
-     * @return array
-     *
-     * @throws InvalidArgumentException when a property was requested not present in the values
-     */
-    private function buildGetResponse(array $properties, array $values)
-    {
-        $response = [];
-        foreach ($properties as $k) {
-            $accessor = self::getAccessor($k);
-
-            // use the supplied value if it's available
-            if (array_key_exists($k, $values)) {
-                $response[$k] = $values[$k];
-            // set any missing values to the default value
-            } elseif ($property = static::getProperty($k)) {
-                $response[$k] = $this->_values[$k] = self::getDefaultValueFor($property);
-            // throw an exception for non-properties that do not
-            // have an accessor
-            } elseif (!$accessor) {
-                throw new InvalidArgumentException(static::modelName().' does not have a `'.$k.'` property.');
-            // otherwise the value is considered null
-            } else {
-                $response[$k] = null;
-            }
-
-            // call any accessors
-            if ($accessor) {
-                $response[$k] = $this->$accessor($response[$k]);
-            }
-        }
-
-        return $response;
-    }
-
-    /**
      * Gets the IDs for a newly created model.
      *
      * @return string
@@ -802,30 +803,6 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Converts the model to an array.
-     *
-     * @return array model array
-     */
-    public function toArray()
-    {
-        // build the list of properties to retrieve
-        $properties = array_keys(static::$properties);
-
-        // remove any hidden properties
-        $hide = (property_exists($this, 'hidden')) ? static::$hidden : [];
-        $properties = array_diff($properties, $hide);
-
-        // add any appended properties
-        $append = (property_exists($this, 'appended')) ? static::$appended : [];
-        $properties = array_merge($properties, $append);
-
-        // get the values for the properties
-        $result = $this->get($properties);
-
-        return $result;
-    }
-
-    /**
      * Updates the model.
      *
      * @param array $data optional key-value properties to set
@@ -836,7 +813,7 @@ abstract class Model implements \ArrayAccess
      */
     public function set(array $data = [])
     {
-        if (!$this->_exists) {
+        if (!$this->_persisted) {
             throw new BadMethodCallException('Can only call set() on an existing model');
         }
 
@@ -899,7 +876,7 @@ abstract class Model implements \ArrayAccess
      */
     public function delete()
     {
-        if (!$this->_exists) {
+        if (!$this->_persisted) {
             throw new BadMethodCallException('Can only call delete() on an existing model');
         }
 
@@ -925,6 +902,64 @@ abstract class Model implements \ArrayAccess
         }
 
         return $deleted;
+    }
+
+    /**
+     * Tells if the model has been persisted.
+     *
+     * @return bool
+     */
+    public function persisted()
+    {
+        return $this->_persisted;
+    }
+
+    /**
+     * Loads the model from the data layer.
+     *
+     * @return self
+     */
+    public function refresh()
+    {
+        if (!$this->_persisted) {
+            return $this;
+        }
+
+        $values = self::getDriver()->loadModel($this);
+
+        if (!is_array($values)) {
+            return $this;
+        }
+
+        return $this->refreshWith($values);
+    }
+
+    /**
+     * Loads values into the model retrieved from the data layer.
+     *
+     * @param array $values values
+     *
+     * @return self
+     */
+    public function refreshWith(array $values)
+    {
+        $this->_persisted = true;
+        $this->_values = $values;
+
+        return $this;
+    }
+
+    /**
+     * Clears the cache for this model.
+     *
+     * @return self
+     */
+    public function clearCache()
+    {
+        $this->_unsaved = [];
+        $this->_values = [];
+
+        return $this;
     }
 
     /////////////////////////////
@@ -997,64 +1032,6 @@ abstract class Model implements \ArrayAccess
         $query->where($where);
 
         return self::getDriver()->totalRecords($query);
-    }
-
-    /**
-     * Checks if the model exists.
-     *
-     * @return bool
-     */
-    public function exists()
-    {
-        return $this->_exists;
-    }
-
-    /**
-     * Loads the model from the data layer.
-     *
-     * @return self
-     */
-    public function refresh()
-    {
-        if (!$this->_exists) {
-            return $this;
-        }
-
-        $values = self::getDriver()->loadModel($this);
-
-        if (!is_array($values)) {
-            return $this;
-        }
-
-        return $this->refreshWith($values);
-    }
-
-    /**
-     * Loads values into the model retrieved from the data layer.
-     *
-     * @param array $values values
-     *
-     * @return self
-     */
-    public function refreshWith(array $values)
-    {
-        $this->_exists = true;
-        $this->_values = $values;
-
-        return $this;
-    }
-
-    /**
-     * Clears the cache for this model.
-     *
-     * @return self
-     */
-    public function clearCache()
-    {
-        $this->_unsaved = [];
-        $this->_values = [];
-
-        return $this;
     }
 
     /////////////////////////////
@@ -1377,7 +1354,7 @@ abstract class Model implements \ArrayAccess
         }
 
         // check uniqueness constraints
-        if ($property['unique'] && (!$this->_exists || $value != $this->ignoreUnsaved()->$name)) {
+        if ($property['unique'] && (!$this->_persisted || $value != $this->ignoreUnsaved()->$name)) {
             $valid = $this->checkUniqueness($name, $property, $value);
         }
 

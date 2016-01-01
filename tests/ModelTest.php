@@ -429,23 +429,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $values);
     }
 
-    public function testGetFromStorage()
-    {
-        $model = new TestModel();
-        $model->refreshWith(['id' => 12]);
-
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-
-        $driver->shouldReceive('loadModel')
-               ->withArgs([$model])
-               ->andReturn(['id' => 12, 'answer' => 42])
-               ->once();
-
-        TestModel::setDriver($driver);
-
-        $this->assertEquals(42, $model->answer);
-    }
-
     public function testGetDefaultFallback()
     {
         $model = new TestModel2(['id' => 12]);
@@ -1090,14 +1073,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals([], $query->getWhere());
     }
 
-    public function testExists()
+    public function testPersisted()
     {
         $model = new TestModel();
-        $this->assertFalse($model->exists());
+        $this->assertFalse($model->persisted());
 
         $model = new TestModel();
         $model->refreshWith(['id' => 12]);
-        $this->assertTrue($model->exists());
+        $this->assertTrue($model->persisted());
     }
 
     /////////////////////////////

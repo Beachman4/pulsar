@@ -42,7 +42,7 @@ trait Cacheable
                 // load the values directly instead of using
                 // refreshWith() to prevent triggering another
                 // cache call
-                $model->_exists = true;
+                $model->_persisted = true;
                 $model->_values = $values;
 
                 return $model;
