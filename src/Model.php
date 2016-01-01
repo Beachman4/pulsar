@@ -1243,7 +1243,7 @@ abstract class Model implements \ArrayAccess
      *
      * @return Errors
      */
-    public function getErrors()
+    public function errors()
     {
         if (!$this->_errors) {
             $this->_errors = new Errors($this->app);
@@ -1260,7 +1260,7 @@ abstract class Model implements \ArrayAccess
     public function valid()
     {
         // clear any previous errors
-        $this->getErrors()->clear();
+        $this->errors()->clear();
 
         $validated = true;
         foreach ($this->_unsaved as $name => &$value) {
@@ -1310,7 +1310,7 @@ abstract class Model implements \ArrayAccess
         }
 
         if (!$valid) {
-            $this->getErrors()->push([
+            $this->errors()->push([
                 'error' => self::ERROR_VALIDATION_FAILED,
                 'params' => [
                     'field' => $name,
@@ -1339,7 +1339,7 @@ abstract class Model implements \ArrayAccess
     private function checkUniqueness($name, array $property, $value)
     {
         if (static::totalRecords([$name => $value]) > 0) {
-            $this->getErrors()->push([
+            $this->errors()->push([
                 'error' => self::ERROR_NOT_UNIQUE,
                 'params' => [
                     'field' => $name,
@@ -1365,7 +1365,7 @@ abstract class Model implements \ArrayAccess
         foreach (static::$properties as $name => $property) {
             if ($property['required'] && !isset($values[$name])) {
                 $property = static::getProperty($name);
-                $this->getErrors()->push([
+                $this->errors()->push([
                     'error' => self::ERROR_REQUIRED_FIELD_MISSING,
                     'params' => [
                         'field' => $name,

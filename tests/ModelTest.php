@@ -698,7 +698,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($model->create($create));
 
         // verify error
-        $this->assertCount(1, $model->getErrors());
+        $this->assertCount(1, $model->errors());
 
         $this->assertEquals(['unique' => 'fail'], $query->getWhere());
     }
@@ -707,14 +707,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $newModel = new TestModel2();
         $this->assertFalse($newModel->create(['id' => 10, 'id2' => 1, 'validate' => 'notanemail', 'required' => true]));
-        $this->assertCount(1, $newModel->getErrors());
+        $this->assertCount(1, $newModel->errors());
     }
 
     public function testCreateMissingRequired()
     {
         $newModel = new TestModel2();
         $this->assertFalse($newModel->create(['id' => 10, 'id2' => 1]));
-        $this->assertCount(1, $newModel->getErrors());
+        $this->assertCount(1, $newModel->errors());
     }
 
     public function testCreateFail()
@@ -915,7 +915,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->validate2 = 'invalid';
 
         $this->assertFalse($model->set());
-        $this->assertCount(1, $model->getErrors());
+        $this->assertCount(1, $model->errors());
     }
 
     /////////////////////////////
@@ -1265,19 +1265,19 @@ class ModelTest extends PHPUnit_Framework_TestCase
     // Validation
     /////////////////////////////
 
-    public function testGetErrors()
+    public function testErrors()
     {
         $model = new TestModel();
-        $stack = $model->getErrors();
+        $stack = $model->errors();
         $this->assertInstanceOf('Pulsar\Errors', $stack);
-        $this->assertEquals($stack, $model->getErrors());
+        $this->assertEquals($stack, $model->errors());
     }
 
     public function testValid()
     {
         $model = new TestModel2();
         $this->assertFalse($model->valid());
-        $this->assertCount(1, $model->getErrors());
+        $this->assertCount(1, $model->errors());
         $expectedError = [
             'error' => 'required_field_missing',
             'message' => 'required_field_missing',
@@ -1286,14 +1286,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'field_name' => 'Required',
             ],
         ];
-        $this->assertEquals($expectedError, $model->getErrors()[0]);
+        $this->assertEquals($expectedError, $model->errors()[0]);
 
         $model->required = true;
         $this->assertTrue($model->valid());
 
         $model->validate = 'not an email address';
         $this->assertFalse($model->valid());
-        $this->assertCount(1, $model->getErrors());
+        $this->assertCount(1, $model->errors());
         $expectedError = [
             'error' => 'validation_failed',
             'message' => 'validation_failed',
@@ -1302,6 +1302,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'field_name' => 'Email address',
             ],
         ];
-        $this->assertEquals($expectedError, $model->getErrors()[0]);
+        $this->assertEquals($expectedError, $model->errors()[0]);
     }
 }
