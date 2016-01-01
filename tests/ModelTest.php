@@ -1238,10 +1238,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($stack, $model->getErrors());
     }
 
-    public function testIsValid()
+    public function testValid()
     {
         $model = new TestModel2();
-        $this->assertFalse($model->isValid());
+        $this->assertFalse($model->valid());
         $this->assertCount(1, $model->getErrors());
         $expectedError = [
             'error' => 'required_field_missing',
@@ -1254,10 +1254,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expectedError, $model->getErrors()[0]);
 
         $model->required = true;
-        $this->assertTrue($model->isValid());
+        $this->assertTrue($model->valid());
 
         $model->validate = 'not an email address';
-        $this->assertFalse($model->isValid());
+        $this->assertFalse($model->valid());
         $this->assertCount(1, $model->getErrors());
         $expectedError = [
             'error' => 'validation_failed',

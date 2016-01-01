@@ -743,7 +743,7 @@ abstract class Model implements \ArrayAccess
         }
 
         // validate the model
-        if (!$this->isValid()) {
+        if (!$this->valid()) {
             return false;
         }
 
@@ -835,7 +835,7 @@ abstract class Model implements \ArrayAccess
         }
 
         // validate the model
-        if (!$this->isValid()) {
+        if (!$this->valid()) {
             return false;
         }
 
@@ -1291,7 +1291,7 @@ abstract class Model implements \ArrayAccess
      *
      * @return bool
      */
-    public function isValid()
+    public function valid()
     {
         // clear any previous errors
         $this->getErrors()->clear();
