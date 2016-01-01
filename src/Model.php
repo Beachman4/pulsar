@@ -277,12 +277,7 @@ abstract class Model implements \ArrayAccess
      */
     public static function modelName()
     {
-        $class_name = get_called_class();
-
-        // strip namespacing
-        $paths = explode('\\', $class_name);
-
-        return end($paths);
+        return explode('\\', get_called_class())[0];
     }
 
     /**
