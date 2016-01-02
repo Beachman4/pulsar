@@ -8,83 +8,51 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-use Pulsar\Errors;
 use Infuse\Locale;
-use Pimple\Container;
+use Pulsar\Errors;
 
 class ErrorsTest extends PHPUnit_Framework_TestCase
 {
-    public static $app;
-    public static $stack;
+    public static $locale;
+    public static $errors;
 
     public static function setUpBeforeClass()
     {
-        self::$app = new Container();
-        self::$app['locale'] = new Locale();
-        self::$stack = new Errors(self::$app);
+        self::$locale = new Locale();
+        self::$locale->setLocaleDataDir(__DIR__.'/locales');
+        self::$errors = new Errors('Person', self::$locale);
     }
 
-    public function testConstruct()
+    public function testGetLocale()
     {
-        $stack = new Errors(self::$app);
+        $errors = new Errors('Person', self::$locale);
+        $this->assertEquals(self::$locale, $errors->getLocale());
+
+        $errors = new Errors('Person');
+        $this->assertInstanceOf('Infuse\Locale', $errors->getLocale());
     }
 
-    public function testPush()
+    public function testAdd()
     {
-        $error1 = [
-            'error' => 'some_error',
-            'message' => 'Something is wrong', ];
+        $this->assertEquals(self::$errors, self::$errors->add('property', 'Something is wrong'));
 
-        $this->assertEquals(self::$stack, self::$stack->push($error1));
+        $this->assertEquals(self::$errors, self::$errors->add('username', 'pulsar.validation.invalid'));
 
-        $error2 = [
-            'error' => 'username_invalid',
-            'message' => 'Username is invalid',
-            'params' => [
-                'field' => 'username', ], ];
-
-        $this->assertEquals(self::$stack, self::$stack->push($error2));
-
-        $this->assertEquals(self::$stack, self::$stack->push('some_error'));
+        $this->assertEquals(self::$errors, self::$errors->add('property', 'some_error'));
     }
 
     /**
-     * @depends testPush
+     * @depends testAdd
      */
-    public function testErrors()
-    {
-        $expected1 = [
-            'error' => 'some_error',
-            'message' => 'Something is wrong',
-            'params' => [], ];
-
-        $expected2 = [
-            'error' => 'username_invalid',
-            'message' => 'Username is invalid',
-            'params' => [
-                'field' => 'username', ], ];
-
-        $expected3 = [
-            'error' => 'some_error',
-            'message' => 'some_error',
-            'params' => [], ];
-
-        $errors = self::$stack->errors();
-        $this->assertEquals(3, count($errors));
-        $this->assertEquals([$expected1, $expected2, $expected3], $errors);
-    }
-
-    /**
-     * @depends testPush
-     */
-    public function testMessages()
+    public function testAll()
     {
         $expected = [
             'Something is wrong',
+            'some_error',
             'Username is invalid',
-            'some_error', ];
+        ];
 
-        $messages = self::$stack->messages();
+        $messages = self::$errors->all();
         $this->assertEquals(3, count($messages));
         $this->assertEquals($expected, $messages);
 
@@ -92,91 +60,59 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @depends testPush
-     */
-    public function testFind()
-    {
-        $expected = [
-            'error' => 'username_invalid',
-            'message' => 'Username is invalid',
-            'params' => [
-                'field' => 'username', ], ];
-
-        $this->assertEquals($expected, self::$stack->find('username'));
-        $this->assertEquals($expected, self::$stack->find('username', 'field'));
-
-        $this->assertFalse(self::$stack->find('non-existent'));
-    }
-
-    /**
-     * @depends testPush
+     * @depends testAdd
      */
     public function testHas()
     {
-        $this->assertTrue(self::$stack->has('username'));
-        $this->assertTrue(self::$stack->has('username', 'field'));
-
-        $this->assertFalse(self::$stack->has('non-existent'));
-        $this->assertFalse(self::$stack->has('username', 'something'));
+        $this->assertTrue(self::$errors->has('username'));
+        $this->assertFalse(self::$errors->has('non-existent'));
     }
 
     /**
-     * @depends testErrors
+     * @depends testAll
      */
     public function testClear()
     {
-        $this->assertEquals(self::$stack, self::$stack->clear());
-        $this->assertCount(0, self::$stack->errors());
+        $this->assertEquals(self::$errors, self::$errors->clear());
+        $this->assertCount(0, self::$errors->all());
     }
 
     public function testIterator()
     {
-        self::$stack->clear();
+        self::$errors->clear();
         for ($i = 1; $i <= 5; ++$i) {
-            self::$stack->push("$i");
+            self::$errors->add('property', $i);
         }
 
         $result = [];
-        foreach (self::$stack as $k => $v) {
-            $result[$k] = $v['error'];
+        foreach (self::$errors as $k => $v) {
+            $result[$k] = $v;
         }
 
-        $this->assertEquals(['1', '2', '3', '4', '5'], $result);
-
-        self::$stack->next();
-        $this->assertNull(self::$stack->current());
+        $this->assertEquals(['property' => ['1', '2', '3', '4', '5']], $result);
     }
 
     public function testCount()
     {
-        self::$stack->clear();
-        self::$stack->push('Test');
-        $this->assertCount(1, self::$stack);
+        self::$errors->clear()->add('property', 'Test');
+        $this->assertCount(1, self::$errors);
     }
 
     public function testArrayAccess()
     {
-        self::$stack->clear();
+        self::$errors->clear();
 
-        self::$stack[0] = 'test';
-        $this->assertTrue(isset(self::$stack[0]));
-        $this->assertFalse(isset(self::$stack[6]));
+        self::$errors['property'] = 'test';
+        $this->assertTrue(isset(self::$errors['property']));
+        $this->assertFalse(isset(self::$errors['notset']));
 
-        $this->assertEquals('test', self::$stack[0]['error']);
-        unset(self::$stack[0]);
+        $this->assertEquals(['test'], self::$errors['property']);
+        unset(self::$errors['property']);
+        $this->assertFalse(isset(self::$errors['property']));
     }
 
     public function testArrayGetFail()
     {
-        $this->setExpectedException('OutOfBoundsException');
-
-        echo self::$stack['invalid'];
-    }
-
-    public function testArraySetFail()
-    {
-        $this->setExpectedException('Exception');
-
-        self::$stack['invalid'] = 'test';
+        $this->assertEquals([], self::$errors['invalid']);
     }
 }

@@ -12,6 +12,7 @@ namespace Pulsar;
 
 use BadMethodCallException;
 use ICanBoogie\Inflector;
+use Infuse\Locale;
 use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
 use Pulsar\Exception\DriverMissingException;
@@ -35,10 +36,6 @@ abstract class Model implements \ArrayAccess
     const TYPE_DATE = 'date';
     const TYPE_OBJECT = 'object';
     const TYPE_ARRAY = 'array';
-
-    const ERROR_REQUIRED_FIELD_MISSING = 'required_field_missing';
-    const ERROR_VALIDATION_FAILED = 'validation_failed';
-    const ERROR_NOT_UNIQUE = 'not_unique';
 
     const DEFAULT_ID_PROPERTY = 'id';
 
@@ -150,6 +147,11 @@ abstract class Model implements \ArrayAccess
      * @staticvar DriverInterface
      */
     private static $driver;
+
+    /**
+     * @staticvar Locale
+     */
+    private static $locale;
 
     /**
      * @staticvar array
@@ -268,6 +270,16 @@ abstract class Model implements \ArrayAccess
     public static function clearDriver()
     {
         self::$driver = null;
+    }
+
+    /**
+     * Sets the locale instance for all models.
+     *
+     * @param Locale $locale
+     */
+    public static function setLocale(Locale $locale)
+    {
+        self::$locale = $locale;
     }
 
     /**
@@ -513,6 +525,25 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Gets the title of a property.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public static function getPropertyTitle($name)
+    {
+        // TODO the property title should be fetched from 
+        // the pulsar.properties.$name value in locale
+        $property = static::getProperty($name);
+        if ($property && isset($property['title'])) {
+            return $property['title'];
+        }
+
+        return Inflector::get()->humanize($name);
+    }
+
+    /**
      * Gets the default value for a property.
      *
      * @param string|array $property
@@ -522,7 +553,7 @@ abstract class Model implements \ArrayAccess
     public static function getDefaultValueFor($property)
     {
         if (!is_array($property)) {
-            $property = self::getProperty($property);
+            $property = static::getProperty($property);
         }
 
         return $property ? array_value($property, 'default') : null;
@@ -1246,7 +1277,7 @@ abstract class Model implements \ArrayAccess
     public function errors()
     {
         if (!$this->_errors) {
-            $this->_errors = new Errors($this->app);
+            $this->_errors = new Errors(get_called_class(), self::$locale);
         }
 
         return $this->_errors;
@@ -1310,11 +1341,8 @@ abstract class Model implements \ArrayAccess
         }
 
         if (!$valid) {
-            $this->errors()->push([
-                'error' => self::ERROR_VALIDATION_FAILED,
-                'params' => [
-                    'field' => $name,
-                    'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
+            // TODO the validate method should add specific errors
+            $this->errors()->add($name, 'pulsar.validation.invalid');
 
             return false;
         }
@@ -1339,11 +1367,7 @@ abstract class Model implements \ArrayAccess
     private function checkUniqueness($name, array $property, $value)
     {
         if (static::totalRecords([$name => $value]) > 0) {
-            $this->errors()->push([
-                'error' => self::ERROR_NOT_UNIQUE,
-                'params' => [
-                    'field' => $name,
-                    'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
+            $this->errors()->add($name, 'pulsar.validation.unique');
 
             return false;
         }
@@ -1365,11 +1389,7 @@ abstract class Model implements \ArrayAccess
         foreach (static::$properties as $name => $property) {
             if ($property['required'] && !isset($values[$name])) {
                 $property = static::getProperty($name);
-                $this->errors()->push([
-                    'error' => self::ERROR_REQUIRED_FIELD_MISSING,
-                    'params' => [
-                        'field' => $name,
-                        'field_name' => (isset($property['title'])) ? $property['title'] : Inflector::get()->titleize($name), ], ]);
+                $this->errors()->add($name, 'pulsar.validation.required');
 
                 $hasRequired = false;
             }

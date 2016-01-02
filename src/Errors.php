@@ -10,46 +10,74 @@
  */
 namespace Pulsar;
 
-use Pimple\Container;
+use ArrayAccess;
+use ArrayIterator;
+use Countable;
+use IteratorAggregate;
+use Infuse\Locale;
 
-class Errors implements \Iterator, \Countable, \ArrayAccess
+class Errors implements IteratorAggregate, Countable, ArrayAccess
 {
     /**
      * @var array
      */
-    private $stack;
+    private $stack = [];
 
     /**
-     * @var \Pimple\Container
+     * @var Model
      */
-    private $app;
+    private $model;
+
+    /**
+     * @var Locale
+     */
+    private $locale;
 
     /**
      * @var int
      */
-    private $pointer;
+    private $pointer = 0;
 
-    public function __construct(Container $app)
+    /**
+     * @param string $model class name of model
+     *
+     * @var Locale
+     */
+    public function __construct($model, Locale $locale = null)
     {
-        $this->stack = [];
-        $this->app = $app;
-        $this->pointer = 0;
+        if (!$locale) {
+            $locale = new Locale();
+        }
+
+        $this->locale = $locale;
+        $this->model = $model;
+    }
+
+    /**
+     * Gets the locale instance.
+     *
+     * @return Locale
+     */
+    public function getLocale()
+    {
+        return $this->locale;
     }
 
     /**
      * Adds an error message to the stack.
      *
-     * @param array|string $error
-     *                            - error: error code
-     *                            - params: array of parameters to be passed to message
-     *                            - class: (optional) the class invoking the error
-     *                            - function: (optional) the function invoking the error
+     * @param string $property name of property the error is about
+     * @param string $error    error code or message
      *
      * @return self
      */
-    public function push($error)
+    public function add($property, $error)
     {
-        $this->stack[] = $this->sanitize($error);
+        if (!isset($this->stack[$property])) {
+            $this->stack[$property] = [];
+        }
+
+        $this->stack[$property][] = $error;
 
         return $this;
     }
@@ -58,71 +86,47 @@ class Errors implements \Iterator, \Countable, \ArrayAccess
      * Gets all of the errors on the stack and also attempts
      * translation using the Locale class.
      *
-     * @param string $locale optional locale
+     * @param string|false $property property to filter by
+     * @param string|false $locale   locale name to translate to
      *
      * @return array errors
      */
-    public function errors($locale = '')
+    public function all($property = false, $locale = false)
     {
-        $errors = [];
-        foreach ($this->stack as $error) {
-            $errors[] = $this->parse($error, $locale);
+        $errors = $this->stack;
+        if ($property) {
+            if (!isset($errors[$property])) {
+                return [];
+            }
+
+            $errors = [$property => $this->stack[$property]];
         }
 
-        return $errors;
-    }
-
-    /**
-     * Gets the messages of errors on the stack.
-     *
-     * @param string $locale optional locale
-     *
-     * @return array errors
-     */
-    public function messages($locale = '')
-    {
+        // convert errors into messages
         $messages = [];
-        foreach ($this->errors($locale) as $error) {
-            $messages[] = $error['message'];
+        foreach ($errors as $property => $errors2) {
+            foreach ($errors2 as $error) {
+                $messages[] = $this->parse($property, $error, $locale);
+            }
         }
 
         return $messages;
     }
 
     /**
-     * Gets an error for a specific parameter on the stack.
+     * Checks if a property has an error.
      *
-     * @param string $value value we are searching for
-     * @param string $param parameter name
-     *
-     * @return array|bool
-     */
-    public function find($value, $param = 'field')
-    {
-        foreach ($this->errors() as $error) {
-            if (array_value($error['params'], $param) === $value) {
-                return $error;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks if an error exists with a specific parameter on the stack.
-     *
-     * @param string $value value we are searching for
-     * @param string $param parameter name
+     * @param string $property
      *
      * @return bool
      */
-    public function has($value, $param = 'field')
+    public function has($property)
     {
-        return $this->find($value, $param) !== false;
+        return isset($this->stack[$property]);
     }
 
     /**
-     * Clears the error stack.
+     * Clears all errors.
      *
      * @return self
      */
@@ -134,97 +138,32 @@ class Errors implements \Iterator, \Countable, \ArrayAccess
     }
 
     /**
-     * Formats an incoming error message.
-     *
-     * @param array|string $error
-     *
-     * @return array
-     */
-    private function sanitize($error)
-    {
-        if (!is_array($error)) {
-            $error = ['error' => $error];
-        }
-
-        if (!isset($error['params'])) {
-            $error['params'] = [];
-        }
-
-        return $error;
-    }
-
-    /**
      * Parses an error message before displaying it.
      *
-     * @param array  $error
-     * @param string $locale
+     * @param string       $property
+     * @param string       $error
+     * @param string|false $locale
      *
      * @return array
      */
-    private function parse(array $error, $locale = '')
+    private function parse($property, $error, $locale)
     {
-        // attempt to translate error into a message
-        if (!isset($error['message'])) {
-            $error['message'] = $this->app['locale']->t($error['error'], $error['params'], $locale);
-        }
+        $model = $this->model;
 
-        return $error;
+        $parameters = [
+            'property' => $model::getPropertyTitle($property),
+        ];
+
+        return $this->locale->t($error, $parameters, $locale);
     }
 
     //////////////////////////
-    // Iterator Interface
+    // IteratorAggregate Interface
     //////////////////////////
 
-    /**
-     * Rewind the Iterator to the first element.
-     */
-    public function rewind()
+    public function getIterator()
     {
-        $this->pointer = 0;
-    }
-
-    /**
-     * Returns the current element.
-     *
-     * @return array|null
-     */
-    public function current()
-    {
-        if ($this->pointer >= $this->count()) {
-            return;
-        }
-
-        $errors = $this->errors();
-
-        return $errors[$this->pointer];
-    }
-
-    /**
-     * Return the key of the current element.
-     *
-     * @return int
-     */
-    public function key()
-    {
-        return $this->pointer;
-    }
-
-    /**
-     * Move forward to the next element.
-     */
-    public function next()
-    {
-        ++$this->pointer;
-    }
-
-    /**
-     * Checks if current position is valid.
-     *
-     * @return bool
-     */
-    public function valid()
-    {
-        return $this->pointer < $this->count();
+        return new ArrayIterator($this->stack);
     }
 
     //////////////////////////
@@ -232,13 +171,13 @@ class Errors implements \Iterator, \Countable, \ArrayAccess
     //////////////////////////
 
     /**
-     * Get total number of models matching query.
+     * Get total number of errors.
      *
      * @return int
      */
     public function count()
     {
-        return count($this->stack);
+        return count($this->all());
     }
 
     /////////////////////////////
@@ -247,31 +186,23 @@ class Errors implements \Iterator, \Countable, \ArrayAccess
 
     public function offsetExists($offset)
     {
-        return isset($this->stack[$offset]);
+        return $this->has($offset);
     }
 
     public function offsetGet($offset)
     {
-        if (!$this->offsetExists($offset)) {
-            throw new \OutOfBoundsException("$offset does not exist on this ErrorStack");
-        }
-
-        $this->pointer = $offset;
-
-        return $this->current();
+        return $this->all($offset);
     }
 
     public function offsetSet($offset, $error)
     {
-        if (!is_numeric($offset)) {
-            throw new \Exception('Can only perform set on numeric indices');
-        }
-
-        $this->stack[$offset] = $this->sanitize($error);
+        $this->add($offset, $error);
     }
 
     public function offsetUnset($offset)
     {
-        unset($this->stack[$offset]);
+        if ($this->has($offset)) {
+            unset($this->stack[$offset]);
+        }
     }
 }

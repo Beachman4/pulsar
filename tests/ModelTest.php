@@ -11,29 +11,13 @@
 use Infuse\Locale;
 use Pulsar\Model;
 use Pulsar\ModelEvent;
-use Pimple\Container;
 
 require_once 'test_models.php';
 
 class ModelTest extends PHPUnit_Framework_TestCase
 {
-    public static $app;
-
-    public static function setUpBeforeClass()
-    {
-        // set up DI
-        self::$app = new Container();
-        self::$app['locale'] = function () {
-            return new Locale();
-        };
-
-        Model::inject(self::$app);
-    }
-
     protected function tearDown()
     {
-        Model::inject(self::$app);
-
         // discard the cached dispatcher to
         // remove any event listeners
         TestModel::getDispatcher(true);
@@ -319,6 +303,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(TestModel::getAccessor('id'));
         $this->assertFalse(TestModel2::getAccessor('id'));
         $this->assertEquals('getAccessorValue', TestModel::getAccessor('accessor'));
+    }
+
+    public function testGetPropertyTitle()
+    {
+        $this->assertEquals('Answer', TestModel::getPropertyTitle('answer'));
+        $this->assertEquals('Email address', TestModel2::getPropertyTitle('validate'));
+        $this->assertEquals('Some property', Model::getPropertyTitle('some_property'));
     }
 
     public function testGetDefaultValueFor()
@@ -699,6 +690,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         // verify error
         $this->assertCount(1, $model->errors());
+        $this->assertEquals(['pulsar.validation.unique'], $model->errors()['unique']);
 
         $this->assertEquals(['unique' => 'fail'], $query->getWhere());
     }
@@ -1273,20 +1265,20 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($stack, $model->errors());
     }
 
+    public function testErrorsLocale()
+    {
+        $locale = new Locale();
+        TestModel::setLocale($locale);
+        $model = new TestModel();
+        $this->assertEquals($locale, $model->errors()->getLocale());
+    }
+
     public function testValid()
     {
         $model = new TestModel2();
         $this->assertFalse($model->valid());
         $this->assertCount(1, $model->errors());
-        $expectedError = [
-            'error' => 'required_field_missing',
-            'message' => 'required_field_missing',
-            'params' => [
-                'field' => 'required',
-                'field_name' => 'Required',
-            ],
-        ];
-        $this->assertEquals($expectedError, $model->errors()[0]);
+        $this->assertEquals(['pulsar.validation.required'], $model->errors()['required']);
 
         $model->required = true;
         $this->assertTrue($model->valid());
@@ -1294,14 +1286,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->validate = 'not an email address';
         $this->assertFalse($model->valid());
         $this->assertCount(1, $model->errors());
-        $expectedError = [
-            'error' => 'validation_failed',
-            'message' => 'validation_failed',
-            'params' => [
-                'field' => 'validate',
-                'field_name' => 'Email address',
-            ],
-        ];
-        $this->assertEquals($expectedError, $model->errors()[0]);
+        $this->assertEquals(['pulsar.validation.invalid'], $model->errors()['validate']);
     }
 }
