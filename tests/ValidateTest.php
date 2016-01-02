@@ -21,19 +21,19 @@ function customValidator(&$value, array $parameters)
 
 class ValidatorTest extends PHPUnit_Framework_TestCase
 {
-    public function testMultipleRequirements()
+    public function testMultipleRules()
     {
         $data = [
             'test' => ['test', 'test'],
             'test2' => 'alphanumer1c',
         ];
 
-        $requirements = [
+        $rules = [
             'test' => 'matching|string:2',
             'test2' => 'alpha_numeric',
         ];
 
-        $validator = new Validator($requirements);
+        $validator = new Validator($rules);
 
         $this->assertTrue($validator->validate($data));
         $this->assertEquals('test', $data['test']);
@@ -46,13 +46,13 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
             'test2' => '#&%(*&#%',
         ];
 
-        $requirements = [
+        $rules = [
             'test' => 'matching|string:2',
             'test2' => 'alpha_numeric',
         ];
 
         $errors = new Errors();
-        $validator = new Validator($requirements, $errors);
+        $validator = new Validator($rules, $errors);
 
         $this->assertFalse($validator->validate($data));
 
@@ -64,7 +64,7 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $errors->all());
     }
 
-    public function testArrayRequirements()
+    public function testArrayRules()
     {
         $validator = $this->buildValidator([['matching', []], ['string', [2]]]);
 
@@ -74,7 +74,7 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
     }
 
     ////////////////////////////////
-    // FILTERS
+    // Rules
     ////////////////////////////////
 
     public function testAlpha()
@@ -262,11 +262,15 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->validateWith($validator, $data));
         $data = '';
         $this->assertFalse($this->validateWith($validator, $data));
+        $data = null;
+        $this->assertFalse($this->validateWith($validator, $data));
+        $data = [];
+        $this->assertFalse($this->validateWith($validator, $data));
     }
 
     public function testSkipEmpty()
     {
-        $validator = $this->buildValidator('skip_empty|range:101');
+        $validator = $this->buildValidator('skip_empty|required|range:101');
         $data = null;
         $this->assertTrue($this->validateWith($validator, $data));
         $this->assertNull($data);
@@ -346,9 +350,9 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($this->validateWith($validator, $data));
     }
 
-    private function buildValidator($requirements)
+    private function buildValidator($rules)
     {
-        return new Validator(['data' => $requirements]);
+        return new Validator(['data' => $rules]);
     }
 
     private function validateWith($validator, &$data)

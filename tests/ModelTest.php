@@ -74,7 +74,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'type' => Model::TYPE_NUMBER,
                 'unique' => false,
                 'mutable' => Model::MUTABLE,
-                'validate' => 'skip_empty',
             ],
             'answer' => [
                 'type' => Model::TYPE_STRING,
@@ -85,7 +84,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'validate' => 'skip_empty',
             ],
             'mutator' => [
                 'type' => Model::TYPE_STRING,
@@ -131,7 +129,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'type' => Model::TYPE_NUMBER,
             'unique' => false,
             'mutable' => Model::MUTABLE,
-            'validate' => 'skip_empty',
         ];
         $this->assertEquals($expected, TestModel::getProperty('relation'));
     }
@@ -157,14 +154,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'validate' => [
                 'type' => Model::TYPE_STRING,
-                'validate' => 'skip_empty|email',
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
                 'title' => 'Email address',
             ],
             'validate2' => [
                 'type' => Model::TYPE_STRING,
-                'validate' => 'skip_empty|custom:validate',
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
             ],
@@ -175,7 +170,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'required' => [
                 'type' => Model::TYPE_NUMBER,
-                'validate' => 'required',
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
             ],
@@ -216,13 +210,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'default' => null,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'validate' => 'skip_empty|timestamp|db_timestamp',
             ],
             'updated_at' => [
                 'type' => Model::TYPE_DATE,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'validate' => 'skip_empty|timestamp|db_timestamp',
             ],
         ];
 
@@ -528,11 +520,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
         TestModel2::setDriver($driver);
 
         $newModel = new TestModel2();
-        $this->assertTrue($newModel->create(['id' => 1, 'id2' => 2, 'required' => 25]));
+        $newModel->id = 1;
+        $newModel->id2 = 2;
+        $newModel->required = 25;
+        $this->assertTrue($newModel->create());
         $this->assertEquals('1,2', $newModel->id());
     }
 
-    public function testCreateImmutable()
+    public function testCreateMassAssignment()
     {
         $newModel = new TestModel2();
 
@@ -545,7 +540,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->withArgs([$newModel, [
                     'id' => 1,
                     'id2' => 2,
-                    'required' => 25,
+                    'required' => true,
+                    'validate' => 'shouldtrimws@example.com',
                     'mutable_create_only' => 'test',
                     'default' => 'some default value',
                     'hidden' => false,
@@ -558,11 +554,21 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     'object' => $object,
                     'person_id' => 20,
                  ]])
-               ->andReturn(true);
+               ->andReturn(true)
+               ->once();
 
         TestModel2::setDriver($driver);
 
-        $this->assertTrue($newModel->create(['id' => 1, 'id2' => 2, 'required' => 25, 'mutable_create_only' => 'test', 'object' => $object]));
+        $input = [
+            'id' => 1,
+            'id2' => 2,
+            'required' => 'on',
+            'validate' => '  SHOULDTRIMWS@EXAMPLE.COM ',
+            'mutable_create_only' => 'test',
+            'object' => $object,
+        ];
+
+        $this->assertTrue($newModel->create($input));
     }
 
     public function testCreateImmutableId()
@@ -579,7 +585,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         TestModel::setDriver($driver);
 
-        $this->assertTrue($newModel->create(['id' => 100]));
+        $newModel->id = 100;
+        $this->assertTrue($newModel->create());
         $this->assertNotEquals(100, $newModel->id());
     }
 
@@ -589,7 +596,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model = new TestModel();
         $model->refreshWith(['id' => 5]);
-        $this->assertFalse($model->create(['relation' => '', 'answer' => 42]));
+        $model->relation = '';
+        $model->answer = 42;
+        $this->assertFalse($model->create());
     }
 
     public function testCreatingListenerFail()
@@ -599,7 +608,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         });
 
         $newModel = new TestModel();
-        $this->assertFalse($newModel->create([]));
+        $this->assertFalse($newModel->create());
     }
 
     public function testCreatedListenerFail()
@@ -619,7 +628,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         });
 
         $newModel = new TestModel();
-        $this->assertFalse($newModel->create([]));
+        $this->assertFalse($newModel->create());
     }
 
     public function testCreateNotUnique()
@@ -639,7 +648,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $create = [
             'id' => 2,
             'id2' => 4,
-            'required' => 25,
+            'required' => true,
             'unique' => 'fail',
         ];
         $this->assertFalse($model->create($create));
@@ -654,14 +663,20 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testCreateInvalid()
     {
         $newModel = new TestModel2();
-        $this->assertFalse($newModel->create(['id' => 10, 'id2' => 1, 'validate' => 'notanemail', 'required' => true]));
+        $newModel->id = 10;
+        $newModel->id2 = 1;
+        $newModel->validate = 'notanemail';
+        $newModel->required = true;
+        $this->assertFalse($newModel->create());
         $this->assertCount(1, $newModel->errors());
     }
 
     public function testCreateMissingRequired()
     {
         $newModel = new TestModel2();
-        $this->assertFalse($newModel->create(['id' => 10, 'id2' => 1]));
+        $newModel->id = 10;
+        $newModel->id2 = 1;
+        $this->assertFalse($newModel->create());
         $this->assertCount(1, $newModel->errors());
     }
 
@@ -675,7 +690,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         TestModel::setDriver($driver);
 
         $newModel = new TestModel();
-        $this->assertFalse($newModel->create(['relation' => '', 'answer' => 42]));
+        $newModel->relation = '';
+        $newModel->answer = 42;
+        $this->assertFalse($newModel->create());
     }
 
     /////////////////////////////
@@ -728,12 +745,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $driver->shouldReceive('updateModel')
                ->withArgs([$model, ['answer' => 'hello', 'mutator' => 'BLAH', 'relation' => null]])
-               ->andReturn(true);
+               ->andReturn(true)
+               ->once();
 
         TestModel::setDriver($driver);
 
         $this->assertTrue($model->set([
-            'answer' => 'hello',
+            'answer' => ['hello', 'hello'],
             'relation' => '',
             'mutator' => 'blah',
             'nonexistent_property' => 'whatever',
@@ -1226,6 +1244,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
         TestModel::setLocale($locale);
         $model = new TestModel();
         $this->assertEquals($locale, $model->errors()->getLocale());
+    }
+
+    public function testValidator()
+    {
+        $model = new TestModel();
+        $validator = $model->getValidator();
+        $this->assertInstanceOf('Pulsar\Validator', $validator);
     }
 
     public function testValid()

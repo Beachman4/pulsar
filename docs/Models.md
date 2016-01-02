@@ -31,12 +31,6 @@ String, Optional
         Default: true
         Optional
 
-### `validate`
-
-Validation string passed to Validate::is() or validation function
-        String or callable
-        Optional
-
 ### `unique`
 
 Specifies whether the field is required to be unique

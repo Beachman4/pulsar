@@ -18,7 +18,6 @@ class TestModel extends Model
     protected static $properties = [
         'relation' => [
             'type' => Model::TYPE_NUMBER,
-            'validate' => 'skip_empty',
         ],
         'answer' => [
             'type' => Model::TYPE_STRING,
@@ -27,20 +26,23 @@ class TestModel extends Model
         'accessor' => [],
         'test_model2_id' => [],
     ];
-    public $preDelete;
-    public $postDelete;
 
-    protected static $hidden = ['mutator', 'accessor', 'test_model2_id'];
+    protected static $validations = [
+        'answer' => 'matching',
+    ];
+
+    protected static $hidden = [
+        'mutator',
+        'accessor',
+        'test_model2_id',
+    ];
     protected static $appended = ['appended'];
 
     public static $query;
 
     protected function initialize()
     {
-        self::$properties['test_hook'] = [
-            'type' => Model::TYPE_STRING,
-            'validate' => 'skip_empty',
-        ];
+        self::$properties['test_hook'] = [];
 
         parent::initialize();
     }
@@ -97,19 +99,14 @@ class TestModel2 extends Model
             'default' => 'some default value',
         ],
         'validate' => [
-            'validate' => 'skip_empty|email',
             'title' => 'Email address',
         ],
-        'validate2' => [
-            'validate' => 'skip_empty|custom:validate',
-        ],
+        'validate2' => [],
         'unique' => [
             'unique' => true,
         ],
         'required' => [
             'type' => Model::TYPE_NUMBER,
-            'validate' => 'required',
-            // 'required' => true,
         ],
         'hidden' => [
             'type' => Model::TYPE_BOOLEAN,
@@ -136,8 +133,23 @@ class TestModel2 extends Model
     ];
 
     protected static $autoTimestamps;
+
+    protected static $validations = [
+        'validate' => 'email',
+        'validate2' => 'custom:validate',
+        'required' => 'required|boolean',
+    ];
+
     protected static $relationships = ['person'];
-    protected static $hidden = ['validate2', 'hidden', 'person_id', 'array', 'object', 'mutable_create_only'];
+
+    protected static $hidden = [
+        'validate2',
+        'hidden',
+        'person_id',
+        'array',
+        'object',
+        'mutable_create_only',
+    ];
     protected static $appended = ['person'];
 
     public static $query;

@@ -24,7 +24,7 @@ class Validator
     /**
      * @var array
      */
-    private $requirements;
+    private $rules;
 
     /**
      * @var Errors
@@ -35,6 +35,15 @@ class Validator
      * @var bool
      */
     private $skipRemaining;
+
+    /**
+     * These are rules that always run even if a value is not present.
+     *
+     * @staticvar array
+     */
+    private static $runsWhenNotPresent = [
+        'required',
+    ];
 
     /**
      * Changes settings for the validator.
@@ -50,21 +59,21 @@ class Validator
      * @var array
      * @var Errors
      */
-    public function __construct(array $requirements, Errors $errors = null)
+    public function __construct(array $rules, Errors $errors = null)
     {
-        // parse requirement strings if used
-        foreach ($requirements as &$requirements2) {
-            if (!is_array($requirements2)) {
-                $requirements2 = $this->buildRequirementsFromStr($requirements2);
+        // parse rule strings if used
+        foreach ($rules as &$rules2) {
+            if (!is_array($rules2)) {
+                $rules2 = $this->buildRulesFromStr($rules2);
             }
         }
 
-        $this->requirements = $requirements;
+        $this->rules = $rules;
         $this->errors = $errors;
     }
 
     /**
-     * Validates whether an input matches the requirements.
+     * Validates whether an input passes the validator's rules.
      *
      * @param array $data
      *
@@ -73,21 +82,26 @@ class Validator
     public function validate(array &$data)
     {
         $validated = true;
-        foreach ($this->requirements as $name => $requirements) {
-            if (!array_key_exists($name, $data)) {
+        foreach ($this->rules as $name => $rules) {
+            // if a value is not present then skip any validations
+            if ((!array_key_exists($name, $data) || !$this->required($data[$name])) && !$this->runsWhenNotPresent($rules)) {
+                continue;
+            }
+
+            if (!isset($data[$name])) {
                 $data[$name] = null;
             }
 
             $this->skipRemaining = false;
 
-            foreach ($requirements as $requirement) {
-                list($filter, $parameters) = $requirement;
+            foreach ($rules as $rule) {
+                list($method, $parameters) = $rule;
 
-                $valid = self::$filter($data[$name], $parameters);
+                $valid = self::$method($data[$name], $parameters);
                 $validated = $validated && $valid;
 
                 if (!$valid && $this->errors) {
-                    $this->errors->add($name, "pulsar.validation.$filter");
+                    $this->errors->add($name, "pulsar.validation.$method");
                 }
 
                 if ($this->skipRemaining) {
@@ -100,38 +114,57 @@ class Validator
     }
 
     /**
-     * Parses a string into a list of requirements.
-     * Requirement strings have the form "numeric|range:10,30" where
-     * '|' separates filters and ':' allows a comma-separated list
+     * Parses a string into a list of rules.
+     * Rule strings have the form "numeric|range:10,30" where
+     * '|' separates rules and ':' allows a comma-separated list
      * of parameters to be specified. This example would generate 
      * [['numeric', []], ['range', [10, 30]]].
      *
-     * @param string $requirements
+     * @param string $rules
      *
      * @return array
      */
-    private function buildRequirementsFromStr($str)
+    private function buildRulesFromStr($str)
     {
-        $requirements = [];
+        $rules = [];
 
         // explodes the string into a a list of strings
-        // containing filters and parameters
+        // containing rules and parameters
         $pieces = explode('|', $str);
         foreach ($pieces as $piece) {
             $exp = explode(':', $piece);
-            // [0] = filter method
+            // [0] = rule method
             $method = $exp[0];
             // [1] = optional method parameters
             $parameters = isset($exp[1]) ? explode(',', $exp[1]) : [];
 
-            $requirements[] = [$exp[0], $parameters];
+            $rules[] = [$exp[0], $parameters];
         }
 
-        return $requirements;
+        return $rules;
     }
 
     /**
-     * Skips remaining requirements.
+     * Checks if the rules should be ran when a value is empty or
+     * not present.
+     *
+     * @param array $rules
+     *
+     * @return bool
+     */
+    private function runsWhenNotPresent(array $rules)
+    {
+        foreach ($rules as $rule) {
+            if (in_array($rule[0], self::$runsWhenNotPresent)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Skips remaining rules.
      *
      * @return self
      */
@@ -143,7 +176,7 @@ class Validator
     }
 
     ////////////////////////////////
-    // FILTERS
+    // Rules
     ////////////////////////////////
 
     /**
@@ -368,11 +401,19 @@ class Validator
      */
     private function required($value)
     {
-        return !empty($value);
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        if (is_array($value) && count($value) === 0) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * Skips any remaining requirements for a field if the
+     * Skips any remaining rules for a field if the
      * value is empty.
      *
      * @param mixed $value

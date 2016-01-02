@@ -60,6 +60,15 @@ abstract class Model implements \ArrayAccess
     protected static $properties = [];
 
     /**
+     * Validation rules expressed as a key-value map with
+     * property names as the keys.
+     * i.e. ['name' => 'string:2'].
+     *
+     * @staticvar array
+     */
+    protected static $validations = [];
+
+    /**
      * @staticvar array
      */
     protected static $relationships = [];
@@ -128,12 +137,18 @@ abstract class Model implements \ArrayAccess
         'created_at' => [
             'type' => self::TYPE_DATE,
             'default' => null,
-            'validate' => 'skip_empty|timestamp|db_timestamp',
         ],
         'updated_at' => [
             'type' => self::TYPE_DATE,
-            'validate' => 'skip_empty|timestamp|db_timestamp',
         ],
+    ];
+
+    /**
+     * @staticvar array
+     */
+    private static $timestampValidations = [
+        'created_at' => 'timestamp|db_timestamp',
+        'updated_at' => 'timestamp|db_timestamp',
     ];
 
     /**
@@ -203,6 +218,8 @@ abstract class Model implements \ArrayAccess
         // add in the auto timestamp properties
         if (property_exists(get_called_class(), 'autoTimestamps')) {
             static::$properties = array_replace(self::$timestampProperties, static::$properties);
+
+            static::$validations = array_replace(self::$timestampValidations, static::$validations);
         }
 
         // fill in each property by extending the property
@@ -1291,14 +1308,19 @@ abstract class Model implements \ArrayAccess
         // clear any previous errors
         $this->errors()->clear();
 
-        // run the validator
+        // run the validator against the model values
+        $validator = $this->getValidator();
         $values = $this->_values + $this->_unsaved;
-        $validator = $this->getValidator($values);
         $validated = $validator->validate($values);
+
+        // add back any modified unsaved values
+        foreach (array_keys($this->_unsaved) as $k) {
+            $this->_unsaved[$k] = $values[$k];
+        }
 
         // check for unique values
         // TODO this should be moved into a validation rule
-        if (!$this->checkUniqueness($values)) {
+        if (!$this->checkUniqueness($this->_unsaved)) {
             $validated = false;
         }
 
@@ -1306,25 +1328,13 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Builds a validator for this model.
-     *
-     * @param array $values
+     * Gets a new validator instance for this model.
      * 
      * @return Validator
      */
-    private function getValidator(array $values)
+    public function getValidator()
     {
-        // build a list of requirements for the validator
-        $requirements = [];
-        foreach (static::$properties as $name => $property) {
-            if (!isset($property['validate'])) {
-                continue;
-            }
-
-            $requirements[$name] = $property['validate'];
-        }
-
-        return new Validator($requirements, $this->errors());
+        return new Validator(static::$validations, $this->errors());
     }
 
     /**
@@ -1339,7 +1349,7 @@ abstract class Model implements \ArrayAccess
         $isUnique = true;
         foreach ($values as $name => $value) {
             $property = static::getProperty($name);
-            if (!$property['unique'] || ($this->_persisted && $value == $this->ignoreUnsaved()->$name)) {
+            if (!$property['unique'] || ($this->persisted() && $value == $this->ignoreUnsaved()->$name)) {
                 continue;
             }
 
