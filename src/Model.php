@@ -1305,6 +1305,7 @@ abstract class Model implements \ArrayAccess
         }
 
         // finally we look for required fields
+        // TODO this should be moved into a validation rule
         if (!$this->hasRequiredValues($this->_values + $this->_unsaved)) {
             $validated = false;
         }
@@ -1337,17 +1338,18 @@ abstract class Model implements \ArrayAccess
         if (isset($property['validate']) && is_callable($property['validate'])) {
             $valid = call_user_func_array($property['validate'], [$value]);
         } elseif (isset($property['validate'])) {
-            $valid = Validate::is($value, $property['validate']);
+            $data = [$name => &$value];
+            $requirements = [$name => $property['validate']];
+            $validator = new Validate($requirements, $this->errors());
+            $valid = $validator->validate($data);
         }
 
         if (!$valid) {
-            // TODO the validate method should add specific errors
-            $this->errors()->add($name, 'pulsar.validation.invalid');
-
             return false;
         }
 
         // check uniqueness constraints
+        // TODO this should be moved into a validation rule
         if ($property['unique'] && (!$this->_persisted || $value != $this->ignoreUnsaved()->$name)) {
             $valid = $this->checkUniqueness($name, $property, $value);
         }

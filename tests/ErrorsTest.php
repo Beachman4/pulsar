@@ -28,8 +28,8 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         $errors = new Errors('Person', self::$locale);
         $this->assertEquals(self::$locale, $errors->getLocale());
 
-        $errors = new Errors('Person');
-        $this->assertInstanceOf('Infuse\Locale', $errors->getLocale());
+        $errors = new Errors();
+        $this->assertNull($errors->getLocale());
     }
 
     public function testAdd()

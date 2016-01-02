@@ -9,88 +9,89 @@
  * @license MIT
  */
 use Infuse\Utility;
+use Pulsar\Errors;
 use Pulsar\Validate;
 
 class ValidateTest extends PHPUnit_Framework_TestCase
 {
     public function testAlpha()
     {
-        $s = 'abc';
-        $this->assertTrue(Validate::is($s, 'alpha'));
-        $s = ')S*F#$)S*';
-        $this->assertFalse(Validate::is($s, 'alpha'));
-        $s = 'abcde';
-        $this->assertTrue(Validate::is($s, 'alpha:5'));
-        $s = 'abc';
-        $this->assertFalse(Validate::is($s, 'alpha:5'));
+        $data = 'abc';
+        $this->assertTrue(Validate::is($data, 'alpha'));
+        $data = ')S*F#$)S*';
+        $this->assertFalse(Validate::is($data, 'alpha'));
+        $data = 'abcde';
+        $this->assertTrue(Validate::is($data, 'alpha:5'));
+        $data = 'abc';
+        $this->assertFalse(Validate::is($data, 'alpha:5'));
     }
 
     public function testAlphaNumeric()
     {
-        $s = 'abc1234';
-        $this->assertTrue(Validate::is($s, 'alpha_numeric'));
-        $s = ')S*F#$)S*';
-        $this->assertFalse(Validate::is($s, 'alpha_numeric'));
-        $s = 'a2cde';
-        $this->assertTrue(Validate::is($s, 'alpha_numeric:5'));
-        $s = 'a2c';
-        $this->assertFalse(Validate::is($s, 'alpha_numeric:5'));
+        $data = 'abc1234';
+        $this->assertTrue(Validate::is($data, 'alpha_numeric'));
+        $data = ')S*F#$)S*';
+        $this->assertFalse(Validate::is($data, 'alpha_numeric'));
+        $data = 'a2cde';
+        $this->assertTrue(Validate::is($data, 'alpha_numeric:5'));
+        $data = 'a2c';
+        $this->assertFalse(Validate::is($data, 'alpha_numeric:5'));
     }
 
     public function testAlphaDash()
     {
-        $s = 'abc-1234';
-        $this->assertTrue(Validate::is($s, 'alpha_dash'));
-        $s = ')S*F#$)S*';
-        $this->assertFalse(Validate::is($s, 'alpha_dash'));
-        $s = 'r2-d2';
-        $this->assertTrue(Validate::is($s, 'alpha_dash:5'));
-        $this->assertFalse(Validate::is($s, 'alpha_dash:7'));
+        $data = 'abc-1234';
+        $this->assertTrue(Validate::is($data, 'alpha_dash'));
+        $data = ')S*F#$)S*';
+        $this->assertFalse(Validate::is($data, 'alpha_dash'));
+        $data = 'r2-d2';
+        $this->assertTrue(Validate::is($data, 'alpha_dash:5'));
+        $this->assertFalse(Validate::is($data, 'alpha_dash:7'));
     }
 
     public function testBoolean()
     {
-        $s = '1';
-        $this->assertTrue(Validate::is($s, 'boolean'));
-        $this->assertTrue($s);
-        $s = '0';
-        $this->assertTrue(Validate::is($s, 'boolean'));
-        $this->assertFalse($s);
+        $data = '1';
+        $this->assertTrue(Validate::is($data, 'boolean'));
+        $this->assertTrue($data);
+        $data = '0';
+        $this->assertTrue(Validate::is($data, 'boolean'));
+        $this->assertFalse($data);
     }
 
     public function testEmail()
     {
-        $s = 'test@example.com';
-        $this->assertTrue(Validate::is($s, 'email'));
-        $s = 'test';
-        $this->assertFalse(Validate::is($s, 'email'));
+        $data = 'test@example.com';
+        $this->assertTrue(Validate::is($data, 'email'));
+        $data = 'test';
+        $this->assertFalse(Validate::is($data, 'email'));
     }
 
     public function testEnum()
     {
-        $s = 'blue';
-        $this->assertTrue(Validate::is($s, 'enum:red,orange,yellow,green,blue,violet'));
-        $s = 'Paris';
-        $this->assertFalse(Validate::is($s, 'enum:Austin,Dallas,OKC,Tulsa'));
+        $data = 'blue';
+        $this->assertTrue(Validate::is($data, 'enum:red,orange,yellow,green,blue,violet'));
+        $data = 'Paris';
+        $this->assertFalse(Validate::is($data, 'enum:Austin,Dallas,OKC,Tulsa'));
     }
 
     public function testDate()
     {
         date_default_timezone_set('UTC');
-        $s = 'today';
-        $this->assertTrue(Validate::is($s, 'date'));
-        $s = '09/17/2013';
-        $this->assertTrue(Validate::is($s, 'date'));
-        $s = 'doesnotwork';
-        $this->assertFalse(Validate::is($s, 'date'));
+        $data = 'today';
+        $this->assertTrue(Validate::is($data, 'date'));
+        $data = '09/17/2013';
+        $this->assertTrue(Validate::is($data, 'date'));
+        $data = 'doesnotwork';
+        $this->assertFalse(Validate::is($data, 'date'));
     }
 
     public function testIp()
     {
-        $s = '127.0.0.1';
-        $this->assertTrue(Validate::is($s, 'ip'));
-        $s = 'doesnotwork';
-        $this->assertFalse(Validate::is($s, 'ip'));
+        $data = '127.0.0.1';
+        $this->assertTrue(Validate::is($data, 'ip'));
+        $data = 'doesnotwork';
+        $this->assertFalse(Validate::is($data, 'ip'));
     }
 
     public function testMatching()
@@ -113,16 +114,16 @@ class ValidateTest extends PHPUnit_Framework_TestCase
 
     public function testNumeric()
     {
-        $s = 12345.22;
-        $this->assertTrue(Validate::is($s, 'numeric'));
-        $s = '1234';
-        $this->assertTrue(Validate::is($s, 'numeric'));
-        $s = 'notanumber';
-        $this->assertFalse(Validate::is($s, 'numeric'));
-        $s = 12345.22;
-        $this->assertTrue(Validate::is($s, 'numeric:double'));
-        $s = 12345.22;
-        $this->assertFalse(Validate::is($s, 'numeric:int'));
+        $data = 12345.22;
+        $this->assertTrue(Validate::is($data, 'numeric'));
+        $data = '1234';
+        $this->assertTrue(Validate::is($data, 'numeric'));
+        $data = 'notanumber';
+        $this->assertFalse(Validate::is($data, 'numeric'));
+        $data = 12345.22;
+        $this->assertTrue(Validate::is($data, 'numeric:double'));
+        $data = 12345.22;
+        $this->assertFalse(Validate::is($data, 'numeric:int'));
     }
 
     public function testPassword()
@@ -140,85 +141,93 @@ class ValidateTest extends PHPUnit_Framework_TestCase
 
     public function testRange()
     {
-        $s = -1;
-        $this->assertTrue(Validate::is($s, 'range'));
-        $this->assertTrue(Validate::is($s, 'range:-1'));
-        $this->assertTrue(Validate::is($s, 'range:-1:100'));
+        $data = -1;
+        $this->assertTrue(Validate::is($data, 'range'));
+        $this->assertTrue(Validate::is($data, 'range:-1'));
+        $this->assertTrue(Validate::is($data, 'range:-1:100'));
 
-        $s = 100;
-        $this->assertFalse(Validate::is($s, 'range:101'));
-        $this->assertFalse(Validate::is($s, 'range:0:99'));
+        $data = 100;
+        $this->assertFalse(Validate::is($data, 'range:101'));
+        $this->assertFalse(Validate::is($data, 'range:0:99'));
     }
 
     public function testRequired()
     {
-        $s = 'ok';
-        $this->assertTrue(Validate::is($s, 'required'));
-        $s = '';
-        $this->assertFalse(Validate::is($s, 'required'));
+        $data = 'ok';
+        $this->assertTrue(Validate::is($data, 'required'));
+        $data = '';
+        $this->assertFalse(Validate::is($data, 'required'));
     }
 
     public function testString()
     {
-        $s = 'thisisok';
-        $this->assertTrue(Validate::is($s, 'string'));
-        $this->assertTrue(Validate::is($s, 'string:5'));
-        $this->assertTrue(Validate::is($s, 'string:1:8'));
-        $this->assertTrue(Validate::is($s, 'string:0:9'));
-        $this->assertFalse(Validate::is($s, 'string:9'));
-        $this->assertFalse(Validate::is($s, 'string:1:7'));
+        $data = 'thisisok';
+        $this->assertTrue(Validate::is($data, 'string'));
+        $this->assertTrue(Validate::is($data, 'string:5'));
+        $this->assertTrue(Validate::is($data, 'string:1:8'));
+        $this->assertTrue(Validate::is($data, 'string:0:9'));
+        $this->assertFalse(Validate::is($data, 'string:9'));
+        $this->assertFalse(Validate::is($data, 'string:1:7'));
 
-        $s = new stdClass();
-        $this->assertFalse(Validate::is($s, 'string'));
+        $data = new stdClass();
+        $this->assertFalse(Validate::is($data, 'string'));
     }
 
     public function testTimeZone()
     {
-        $s = 'America/Chicago';
-        $this->assertTrue(Validate::is($s, 'time_zone'));
-        $s = 'anywhere';
-        $this->assertFalse(Validate::is($s, 'time_zone'));
+        $data = 'America/Chicago';
+        $this->assertTrue(Validate::is($data, 'time_zone'));
+        $data = 'anywhere';
+        $this->assertFalse(Validate::is($data, 'time_zone'));
     }
 
     public function testTimestamp()
     {
-        $s = $t = time();
-        $this->assertTrue(Validate::is($s, 'timestamp'));
-        $this->assertEquals($t, $s);
+        $data = $t = time();
+        $this->assertTrue(Validate::is($data, 'timestamp'));
+        $this->assertEquals($t, $data);
 
-        $s = 'today';
-        $this->assertTrue(Validate::is($s, 'timestamp'));
-        $this->assertEquals(strtotime('today'), $s);
+        $data = 'today';
+        $this->assertTrue(Validate::is($data, 'timestamp'));
+        $this->assertEquals(strtotime('today'), $data);
     }
 
     public function testDbTimestamp()
     {
-        $s = mktime(23, 34, 20, 4, 18, 2012);
-        $this->assertTrue(Validate::is($s, 'db_timestamp'));
-        $this->assertEquals('2012-04-18 23:34:20', $s);
+        $data = mktime(23, 34, 20, 4, 18, 2012);
+        $this->assertTrue(Validate::is($data, 'db_timestamp'));
+        $this->assertEquals('2012-04-18 23:34:20', $data);
 
-        $s = 'test';
-        $this->assertFalse(Validate::is($s, 'db_timestamp'));
+        $data = 'test';
+        $this->assertFalse(Validate::is($data, 'db_timestamp'));
     }
 
     public function testUrl()
     {
-        $s = 'http://example.com';
-        $this->assertTrue(Validate::is($s, 'url'));
-        $s = 'notaurl';
-        $this->assertFalse(Validate::is($s, 'url'));
+        $data = 'http://example.com';
+        $this->assertTrue(Validate::is($data, 'url'));
+        $data = 'notaurl';
+        $this->assertFalse(Validate::is($data, 'url'));
     }
 
     public function testMultipleRequirements()
     {
-        $t = ['test', 'test'];
-        $this->assertTrue(Validate::is($t, 'matching|string:2'));
-        $this->assertEquals('test', $t);
+        $data = ['test', 'test'];
+        $this->assertTrue(Validate::is($data, 'matching|string:2'));
+        $this->assertEquals('test', $data);
+    }
+
+    public function testArrayRequirements()
+    {
+        $data = ['test', 'test'];
+        $requirements = [['matching', []], ['string', [2]]];
+        $this->assertTrue(Validate::is($data, $requirements));
+        $this->assertEquals('test', $data);
     }
 
     public function testKeyValueRequirements()
     {
-        $test = [
+        $data = [
             'test' => ['test', 'test'],
             'test2' => 'alphanumer1c',
         ];
@@ -228,7 +237,34 @@ class ValidateTest extends PHPUnit_Framework_TestCase
             'test2' => 'alpha_numeric',
         ];
 
-        $this->assertTrue(Validate::is($test, $requirements));
-        $this->assertEquals('test', $test['test']);
+        $validator = new Validate($requirements);
+
+        $this->assertTrue($validator->validate($data));
+        $this->assertEquals('test', $data['test']);
+    }
+
+    public function testInvalidWithErrors()
+    {
+        $data = [
+            'test' => ['test', 'test1'],
+            'test2' => '#&%(*&#%',
+        ];
+
+        $requirements = [
+            'test' => 'matching|string:2',
+            'test2' => 'alpha_numeric',
+        ];
+
+        $errors = new Errors();
+        $validator = new Validate($requirements, $errors);
+
+        $this->assertFalse($validator->validate($data));
+
+        $expected = [
+            'pulsar.validation.matching',
+            'pulsar.validation.string',
+            'pulsar.validation.alpha_numeric',
+        ];
+        $this->assertEquals($expected, $errors->all());
     }
 }

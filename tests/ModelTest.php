@@ -907,7 +907,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->validate2 = 'invalid';
 
         $this->assertFalse($model->set());
-        $this->assertCount(1, $model->errors());
     }
 
     /////////////////////////////
@@ -1286,6 +1285,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->validate = 'not an email address';
         $this->assertFalse($model->valid());
         $this->assertCount(1, $model->errors());
-        $this->assertEquals(['pulsar.validation.invalid'], $model->errors()['validate']);
+        $this->assertEquals(['pulsar.validation.email'], $model->errors()['validate']);
     }
 }

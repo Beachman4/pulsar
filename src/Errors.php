@@ -43,14 +43,10 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
      *
      * @var Locale
      */
-    public function __construct($model, Locale $locale = null)
+    public function __construct($model = null, Locale $locale = null)
     {
-        if (!$locale) {
-            $locale = new Locale();
-        }
-
-        $this->locale = $locale;
         $this->model = $model;
+        $this->locale = $locale;
     }
 
     /**
@@ -148,6 +144,10 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
      */
     private function parse($property, $error, $locale)
     {
+        if (!$this->locale) {
+            return $error;
+        }
+
         $model = $this->model;
 
         $parameters = [
