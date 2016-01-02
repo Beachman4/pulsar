@@ -98,9 +98,7 @@ class TestModel2 extends Model
         'default' => [
             'default' => 'some default value',
         ],
-        'validate' => [
-            'title' => 'Email address',
-        ],
+        'validate' => [],
         'validate2' => [],
         'unique' => [],
         'required' => [

@@ -296,6 +296,14 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Clears the locale for all models.
+     */
+    public static function clearLocale()
+    {
+        self::$locale = null;
+    }
+
+    /**
      * Gets the name of the model without namespacing.
      *
      * @return string
@@ -546,11 +554,12 @@ abstract class Model implements \ArrayAccess
      */
     public static function getPropertyTitle($name)
     {
-        // TODO the property title should be fetched from 
-        // the pulsar.properties.$name value in locale
-        $property = static::getProperty($name);
-        if ($property && isset($property['title'])) {
-            return $property['title'];
+        // attmept to fetch the title from the Locale service
+        $k = 'pulsar.properties.'.static::modelName().'.'.$name;
+        if (self::$locale && $title = self::$locale->t($k)) {
+            if ($title != $k) {
+                return $title;
+            }
         }
 
         return Inflector::get()->humanize($name);

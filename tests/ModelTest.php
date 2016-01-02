@@ -21,6 +21,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         // discard the cached dispatcher to
         // remove any event listeners
         TestModel::getDispatcher(true);
+
+        Model::clearDriver();
+        Model::clearLocale();
     }
 
     public function testInjectContainer()
@@ -42,7 +45,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testDriver()
     {
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertEquals($driver, TestModel::getDriver());
 
@@ -59,7 +62,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('getTablename')
                ->withArgs(['TestModel'])
                ->andReturn('TestModels');
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
     }
 
     public function testGetProperties()
@@ -142,7 +145,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'validate' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'title' => 'Email address',
             ],
             'validate2' => [
                 'type' => Model::TYPE_STRING,
@@ -232,6 +234,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testGetPropertyTitle()
     {
         $this->assertEquals('Answer', TestModel::getPropertyTitle('answer'));
+
+        $locale = new Locale();
+        $locale->setLocaleDataDir(__DIR__.'/locales');
+        Model::setLocale($locale);
+
         $this->assertEquals('Email address', TestModel2::getPropertyTitle('validate'));
         $this->assertEquals('Some property', Model::getPropertyTitle('some_property'));
     }
@@ -374,7 +381,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('queryModels')
                ->andReturn([['id' => 3, 'name' => 'Bob', 'email' => 'bob@example.com']]);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $expected = [
             'id' => 1,
@@ -439,7 +446,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->withArgs([$newModel, 'id'])
                ->andReturn(1);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $params = [
             'relation' => '',
@@ -473,7 +480,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('getCreatedID')
                ->andReturn(1);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $newModel->relation = '';
         $newModel->answer = 42;
@@ -493,7 +500,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn(true)
                ->once();
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $newModel = new TestModel2();
         $newModel->id = 1;
@@ -533,7 +540,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn(true)
                ->once();
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $input = [
             'id' => 1,
@@ -559,7 +566,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('getCreatedID')
                ->andReturn(1);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $newModel->id = 100;
         $this->assertTrue($newModel->create());
@@ -597,7 +604,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('getCreatedID')
                ->andReturn(1);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         TestModel::created(function (ModelEvent $event) {
             $event->stopPropagation();
@@ -617,7 +624,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('totalRecords')
                ->andReturn(1);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = new TestModel2();
 
@@ -663,7 +670,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('createModel')
                ->andReturn(false);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $newModel = new TestModel();
         $newModel->relation = '';
@@ -688,7 +695,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->withArgs([$model, ['answer' => 42]])
                ->andReturn(true);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $model->answer = 42;
 
@@ -706,7 +713,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->withArgs([$model, ['answer' => 42]])
                ->andReturn(true);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $model->answer = 42;
         $this->assertTrue($model->save());
@@ -724,7 +731,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn(true)
                ->once();
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertTrue($model->set([
             'answer' => ['hello', 'hello'],
@@ -746,7 +753,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn(true)
                ->once();
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $model->id = 432;
         $model->mutable_create_only = 'blah';
@@ -763,7 +770,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('updateModel')
                ->andReturn(false);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $model->answer = 42;
 
@@ -797,7 +804,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('updateModel')
                ->andReturn(true);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         TestModel::updated(function (ModelEvent $event) {
             $event->stopPropagation();
@@ -822,7 +829,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('updateModel')
                ->andReturn(true);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = new TestModel2();
         $model->refreshWith(['id' => 12]);
@@ -841,7 +848,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('updateModel')
                ->andReturn(true);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = new TestModel2();
         $model->refreshWith(['id' => 12, 'required' => true, 'unique' => 'works']);
@@ -872,7 +879,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('deleteModel')
                ->withArgs([$model])
                ->andReturn(true);
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertTrue($model->delete());
     }
@@ -903,7 +910,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('deleteModel')
                ->andReturn(true);
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         TestModel::deleted(function (ModelEvent $event) {
             $event->stopPropagation();
@@ -923,7 +930,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('deleteModel')
                ->withArgs([$model])
                ->andReturn(false);
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertFalse($model->delete());
     }
@@ -959,7 +966,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                })
                ->once();
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = TestModel::find(100);
         $this->assertInstanceOf('TestModel', $model);
@@ -975,7 +982,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn([])
                ->once();
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertNull(TestModel::find(101));
     }
@@ -988,7 +995,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn([['id' => 100, 'answer' => 42]])
                ->once();
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = TestModel::findOrFail(100);
         $this->assertInstanceOf('TestModel', $model);
@@ -1006,7 +1013,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                ->andReturn([])
                ->once();
 
-        TestModel::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertNull(TestModel::findOrFail(101));
     }
@@ -1021,7 +1028,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('totalRecords')
                ->andReturn(1);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertEquals(1, TestModel2::totalRecords(['name' => 'John']));
 
@@ -1038,7 +1045,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('totalRecords')
                ->andReturn(2);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertEquals(2, TestModel2::totalRecords());
 
@@ -1128,7 +1135,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     return [['id' => $query->getWhere()['id']]];
                });
 
-        Person::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = new TestModel2();
         $model->person_id = '10';
@@ -1182,7 +1189,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                })
                ->once();
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $this->assertEquals($model, $model->refresh());
         $this->assertEquals('value', $model->unique);
@@ -1195,7 +1202,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('queryModels')
                ->andReturn([]);
 
-        TestModel2::setDriver($driver);
+        Model::setDriver($driver);
 
         $model = new TestModel2();
         $model->refreshWith(['id' => 12]);
@@ -1217,7 +1224,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testErrorsLocale()
     {
         $locale = new Locale();
-        TestModel::setLocale($locale);
+        Model::setLocale($locale);
         $model = new TestModel();
         $this->assertEquals($locale, $model->errors()->getLocale());
     }
