@@ -97,7 +97,7 @@ class Validator
             foreach ($rules as $rule) {
                 list($method, $parameters) = $rule;
 
-                $valid = self::$method($data[$name], $parameters);
+                $valid = self::$method($data[$name], $parameters, $name);
                 $validated = $validated && $valid;
 
                 if (!$valid && $this->errors) {
@@ -511,6 +511,28 @@ class Validator
         }
 
         return false;
+    }
+
+    /**
+     * Checks if a value is unique for a model.
+     *
+     * @param mixed  $value
+     * @param array  $parameters
+     * @param string $name
+     * @param Model  $model
+     *
+     * @return bool
+     */
+    private function unique($value, array $parameters, $name)
+    {
+        $model = $this->errors->getModel();
+        // if the model has already been saved and its value has not
+        // changed then there is no need to check for uniqueness
+        if ($model->persisted() && $value == $model->ignoreUnsaved()->$name) {
+            return true;
+        }
+
+        return $model::totalRecords([$name => $value]) == 0;
     }
 
     /**

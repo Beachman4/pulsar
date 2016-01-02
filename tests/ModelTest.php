@@ -68,37 +68,30 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'id' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::IMMUTABLE,
-                'unique' => false,
             ],
             'relation' => [
                 'type' => Model::TYPE_NUMBER,
-                'unique' => false,
                 'mutable' => Model::MUTABLE,
             ],
             'answer' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'test_hook' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'mutator' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'accessor' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'test_model2_id' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
         ];
 
@@ -110,7 +103,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected = [
             'type' => Model::TYPE_STRING,
             'mutable' => Model::MUTABLE,
-            'unique' => false,
         ];
 
         $this->assertEquals($expected, Person::getProperty('id'));
@@ -121,13 +113,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected = [
             'type' => Model::TYPE_NUMBER,
             'mutable' => Model::IMMUTABLE,
-            'unique' => false,
         ];
         $this->assertEquals($expected, TestModel::getProperty('id'));
 
         $expected = [
             'type' => Model::TYPE_NUMBER,
-            'unique' => false,
             'mutable' => Model::MUTABLE,
         ];
         $this->assertEquals($expected, TestModel::getProperty('relation'));
@@ -139,51 +129,42 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'id' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'id2' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'default' => [
                 'type' => Model::TYPE_STRING,
                 'default' => 'some default value',
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'validate' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
                 'title' => 'Email address',
             ],
             'validate2' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'unique' => [
                 'type' => Model::TYPE_STRING,
-                'unique' => true,
                 'mutable' => Model::MUTABLE,
             ],
             'required' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'hidden' => [
                 'type' => Model::TYPE_BOOLEAN,
                 'default' => false,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'person_id' => [
                 'type' => Model::TYPE_NUMBER,
                 'default' => 20,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'array' => [
                 'type' => Model::TYPE_ARRAY,
@@ -193,28 +174,23 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     'discounts' => false,
                     'shipping' => false,
                 ],
-                'unique' => false,
             ],
             'object' => [
                 'type' => Model::TYPE_OBJECT,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'mutable_create_only' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE_CREATE_ONLY,
-                'unique' => false,
             ],
             'created_at' => [
                 'type' => Model::TYPE_DATE,
                 'default' => null,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
             'updated_at' => [
                 'type' => Model::TYPE_DATE,
                 'mutable' => Model::MUTABLE,
-                'unique' => false,
             ],
         ];
 

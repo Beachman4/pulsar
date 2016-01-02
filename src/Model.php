@@ -118,8 +118,6 @@ abstract class Model implements \ArrayAccess
     private static $propertyDefinitionBase = [
         'type' => self::TYPE_STRING,
         'mutable' => self::MUTABLE,
-        // TODO move these into validation rules
-        'unique' => false,
     ];
 
     /**
@@ -1292,7 +1290,7 @@ abstract class Model implements \ArrayAccess
     public function errors()
     {
         if (!$this->_errors) {
-            $this->_errors = new Errors(get_called_class(), self::$locale);
+            $this->_errors = new Errors($this, self::$locale);
         }
 
         return $this->_errors;
@@ -1318,12 +1316,6 @@ abstract class Model implements \ArrayAccess
             $this->_unsaved[$k] = $values[$k];
         }
 
-        // check for unique values
-        // TODO this should be moved into a validation rule
-        if (!$this->checkUniqueness($this->_unsaved)) {
-            $validated = false;
-        }
-
         return $validated;
     }
 
@@ -1335,31 +1327,5 @@ abstract class Model implements \ArrayAccess
     public function getValidator()
     {
         return new Validator(static::$validations, $this->errors());
-    }
-
-    /**
-     * Checks if a value is unique for that property.
-     *
-     * @param array $values
-     *
-     * @return bool
-     */
-    private function checkUniqueness(array $values)
-    {
-        $isUnique = true;
-        foreach ($values as $name => $value) {
-            $property = static::getProperty($name);
-            if (!$property['unique'] || ($this->persisted() && $value == $this->ignoreUnsaved()->$name)) {
-                continue;
-            }
-
-            if (static::totalRecords([$name => $value]) > 0) {
-                $this->errors()->add($name, 'pulsar.validation.unique');
-
-                $isUnique = false;
-            }
-        }
-
-        return $isUnique;
     }
 }

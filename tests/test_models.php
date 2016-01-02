@@ -102,9 +102,7 @@ class TestModel2 extends Model
             'title' => 'Email address',
         ],
         'validate2' => [],
-        'unique' => [
-            'unique' => true,
-        ],
+        'unique' => [],
         'required' => [
             'type' => Model::TYPE_NUMBER,
         ],
@@ -138,6 +136,7 @@ class TestModel2 extends Model
         'validate' => 'email',
         'validate2' => 'custom:validate',
         'required' => 'required|boolean',
+        'unique' => 'unique',
     ];
 
     protected static $relationships = ['person'];

@@ -23,6 +23,12 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         self::$errors = new Errors('Person', self::$locale);
     }
 
+    public function testGetModel()
+    {
+        $errors = new Errors('Person');
+        $this->assertEquals('Person', $errors->getModel());
+    }
+
     public function testGetLocale()
     {
         $errors = new Errors('Person', self::$locale);

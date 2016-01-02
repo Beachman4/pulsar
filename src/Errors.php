@@ -39,7 +39,7 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
     private $pointer = 0;
 
     /**
-     * @param string $model class name of model
+     * @param Model|string $model class name of model
      *
      * @var Locale
      */
@@ -47,6 +47,16 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
     {
         $this->model = $model;
         $this->locale = $locale;
+    }
+
+    /**
+     * Gets the model instance for these errors.
+     *
+     * @return Model|string|null
+     */
+    public function getModel()
+    {
+        return $this->model;
     }
 
     /**

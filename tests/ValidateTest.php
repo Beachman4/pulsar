@@ -341,6 +341,32 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($this->validateWith($validator, $data));
     }
 
+    public function testUnique()
+    {
+        $model = Mockery::mock('Pulsar\Model[totalRecords]');
+        $model->refreshWith(['data' => 'unchanged']);
+
+        $errors = new Errors($model);
+        $validator = $this->buildValidator('unique', $errors);
+        $data = 'unchanged';
+        $this->assertTrue($this->validateWith($validator, $data));
+
+        $model->data = 'unique';
+        $model->shouldReceive('totalRecords')
+              ->withArgs([['data' => 'unique']])
+              ->andReturn(0);
+
+        $data = 'unique';
+        $this->assertTrue($this->validateWith($validator, $data));
+
+        $model->shouldReceive('totalRecords')
+              ->withArgs([['data' => 'not_unique']])
+              ->andReturn(1);
+
+        $data = 'not_unique';
+        $this->assertFalse($this->validateWith($validator, $data));
+    }
+
     public function testUrl()
     {
         $validator = $this->buildValidator('url');
@@ -350,9 +376,9 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($this->validateWith($validator, $data));
     }
 
-    private function buildValidator($rules)
+    private function buildValidator($rules, $errors = null)
     {
-        return new Validator(['data' => $rules]);
+        return new Validator(['data' => $rules], $errors);
     }
 
     private function validateWith($validator, &$data)
