@@ -68,51 +68,39 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'id' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::IMMUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'relation' => [
                 'type' => Model::TYPE_NUMBER,
-                'null' => true,
                 'unique' => false,
-                'required' => false,
                 'mutable' => Model::MUTABLE,
+                'validate' => 'skip_empty',
             ],
             'answer' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'test_hook' => [
                 'type' => Model::TYPE_STRING,
-                'null' => true,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'required' => false,
+                'validate' => 'skip_empty',
             ],
             'mutator' => [
                 'type' => Model::TYPE_STRING,
-                'null' => false,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'required' => false,
             ],
             'accessor' => [
                 'type' => Model::TYPE_STRING,
-                'null' => false,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'required' => false,
             ],
             'test_model2_id' => [
                 'type' => Model::TYPE_STRING,
-                'null' => false,
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'required' => false,
             ],
         ];
 
@@ -124,9 +112,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected = [
             'type' => Model::TYPE_STRING,
             'mutable' => Model::MUTABLE,
-            'null' => false,
             'unique' => false,
-            'required' => false,
         ];
 
         $this->assertEquals($expected, Person::getProperty('id'));
@@ -137,18 +123,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected = [
             'type' => Model::TYPE_NUMBER,
             'mutable' => Model::IMMUTABLE,
-            'null' => false,
             'unique' => false,
-            'required' => false,
         ];
         $this->assertEquals($expected, TestModel::getProperty('id'));
 
         $expected = [
             'type' => Model::TYPE_NUMBER,
-            'null' => true,
             'unique' => false,
-            'required' => false,
             'mutable' => Model::MUTABLE,
+            'validate' => 'skip_empty',
         ];
         $this->assertEquals($expected, TestModel::getProperty('relation'));
     }
@@ -159,114 +142,87 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'id' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'id2' => [
                 'type' => Model::TYPE_NUMBER,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'default' => [
                 'type' => Model::TYPE_STRING,
                 'default' => 'some default value',
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'validate' => [
                 'type' => Model::TYPE_STRING,
-                'validate' => 'email',
-                'null' => true,
+                'validate' => 'skip_empty|email',
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'required' => false,
                 'title' => 'Email address',
             ],
             'validate2' => [
                 'type' => Model::TYPE_STRING,
-                'validate' => 'validate',
-                'null' => true,
+                'validate' => 'skip_empty|custom:validate',
                 'mutable' => Model::MUTABLE,
                 'unique' => false,
-                'required' => false,
             ],
             'unique' => [
                 'type' => Model::TYPE_STRING,
                 'unique' => true,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
-                'required' => false,
             ],
             'required' => [
                 'type' => Model::TYPE_NUMBER,
-                'required' => true,
+                'validate' => 'required',
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
             ],
             'hidden' => [
                 'type' => Model::TYPE_BOOLEAN,
                 'default' => false,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'person_id' => [
                 'type' => Model::TYPE_NUMBER,
                 'default' => 20,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'array' => [
                 'type' => Model::TYPE_ARRAY,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'default' => [
                     'tax' => '%',
                     'discounts' => false,
                     'shipping' => false,
                 ],
                 'unique' => false,
-                'required' => false,
             ],
             'object' => [
                 'type' => Model::TYPE_OBJECT,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'mutable_create_only' => [
                 'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE_CREATE_ONLY,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
             ],
             'created_at' => [
                 'type' => Model::TYPE_DATE,
                 'default' => null,
                 'mutable' => Model::MUTABLE,
-                'null' => true,
                 'unique' => false,
-                'required' => false,
-                'validate' => 'timestamp|db_timestamp',
+                'validate' => 'skip_empty|timestamp|db_timestamp',
             ],
             'updated_at' => [
                 'type' => Model::TYPE_DATE,
                 'mutable' => Model::MUTABLE,
-                'null' => false,
                 'unique' => false,
-                'required' => false,
-                'validate' => 'timestamp|db_timestamp',
+                'validate' => 'skip_empty|timestamp|db_timestamp',
             ],
         ];
 

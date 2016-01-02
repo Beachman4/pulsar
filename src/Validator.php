@@ -12,7 +12,7 @@ namespace Pulsar;
 
 use Infuse\Utility;
 
-class Validate
+class Validator
 {
     /**
      * @staticvar array
@@ -32,6 +32,11 @@ class Validate
     private $errors;
 
     /**
+     * @var bool
+     */
+    private $skipRemaining;
+
+    /**
      * Changes settings for the validator.
      *
      * @param array $config
@@ -39,29 +44,6 @@ class Validate
     public static function configure($config)
     {
         self::$config = array_replace(self::$config, (array) $config);
-    }
-
-    /**
-     * Validates a single field on the given requirements.
-     * Requirement filters may be chained and will be executed in
-     * the given order.
-     * i.e. Validate::is('gob@bluthfamily.com', 'email') or Validate::is(['password1', 'password2'], 'matching|password:8|required').
-     *
-     * NOTE: some filters may modify the data, which is passed in by reference
-     *
-     * @param mixed        $data         input
-     * @param array|string $requirements can be a requirements array or string
-     *
-     * @var Errors
-     */
-    public static function is(&$data, $requirements, Errors $errors = null)
-    {
-        $data2 = ['data' => &$data];
-        $requirements = ['data' => $requirements];
-
-        $validator = new self($requirements, $errors);
-
-        return $validator->validate($data2);
     }
 
     /**
@@ -92,14 +74,24 @@ class Validate
     {
         $validated = true;
         foreach ($this->requirements as $name => $requirements) {
-            foreach ($requirements as $requirement) {
-                list($filter, $arguments) = $requirement;
+            if (!array_key_exists($name, $data)) {
+                $data[$name] = null;
+            }
 
-                $valid = self::$filter($data[$name], $arguments);
+            $this->skipRemaining = false;
+
+            foreach ($requirements as $requirement) {
+                list($filter, $parameters) = $requirement;
+
+                $valid = self::$filter($data[$name], $parameters);
                 $validated = $validated && $valid;
 
                 if (!$valid && $this->errors) {
                     $this->errors->add($name, "pulsar.validation.$filter");
+                }
+
+                if ($this->skipRemaining) {
+                    break;
                 }
             }
         }
@@ -123,17 +115,31 @@ class Validate
         $requirements = [];
 
         // explodes the string into a a list of strings
-        // containing filters and arguments
+        // containing filters and parameters
         $pieces = explode('|', $str);
         foreach ($pieces as $piece) {
-            // [0] = filter method
-            // [1] = optional method arguments
             $exp = explode(':', $piece);
+            // [0] = filter method
+            $method = $exp[0];
+            // [1] = optional method parameters
+            $parameters = isset($exp[1]) ? explode(',', $exp[1]) : [];
 
-            $requirements[] = [$exp[0], (array) array_slice($exp, 1)];
+            $requirements[] = [$exp[0], $parameters];
         }
 
         return $requirements;
+    }
+
+    /**
+     * Skips remaining requirements.
+     *
+     * @return self
+     */
+    private function skipRemaining()
+    {
+        $this->skipRemaining = true;
+
+        return $this;
     }
 
     ////////////////////////////////
@@ -149,7 +155,7 @@ class Validate
      *
      * @return bool
      */
-    private function alpha(&$value, array $parameters)
+    private function alpha($value, array $parameters)
     {
         return preg_match('/^[A-Za-z]*$/', $value) && strlen($value) >= array_value($parameters, 0);
     }
@@ -163,7 +169,7 @@ class Validate
      *
      * @return bool
      */
-    private function alpha_numeric(&$value, array $parameters)
+    private function alpha_numeric($value, array $parameters)
     {
         return preg_match('/^[A-Za-z0-9]*$/', $value) && strlen($value) >= array_value($parameters, 0);
     }
@@ -177,7 +183,7 @@ class Validate
      *
      * @return bool
      */
-    private function alpha_dash(&$value, array $parameters)
+    private function alpha_dash($value, array $parameters)
     {
         return preg_match('/^[A-Za-z0-9_-]*$/', $value) && strlen($value) >= array_value($parameters, 0);
     }
@@ -194,6 +200,22 @@ class Validate
         $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
 
         return true;
+    }
+
+    /**
+     * Validates by calling a given function.
+     *
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    private function custom(&$value, array $parameters)
+    {
+        $method = $parameters[0];
+        $parameters2 = (array) array_slice($parameters, 1);
+
+        return $method($value, $parameters2);
     }
 
     /**
@@ -219,11 +241,9 @@ class Validate
      *
      * @return bool
      */
-    private function enum(&$value, array $parameters)
+    private function enum($value, array $parameters)
     {
-        $enum = explode(',', array_value($parameters, 0));
-
-        return in_array($value, $enum);
+        return in_array($value, $parameters);
     }
 
     /**
@@ -233,7 +253,7 @@ class Validate
      *
      * @return bool
      */
-    private function date(&$value)
+    private function date($value)
     {
         return strtotime($value);
     }
@@ -245,7 +265,7 @@ class Validate
      *
      * @return bool
      */
-    private function ip(&$value)
+    private function ip($value)
     {
         return filter_var($value, FILTER_VALIDATE_IP);
     }
@@ -287,7 +307,7 @@ class Validate
      *
      * @return bool
      */
-    private function numeric(&$value, array $parameters)
+    private function numeric($value, array $parameters)
     {
         $check = 'is_'.array_value($parameters, 0);
 
@@ -324,7 +344,7 @@ class Validate
      *
      * @return bool
      */
-    private function range(&$value, array $parameters)
+    private function range($value, array $parameters)
     {
         // check min
         if (isset($parameters[0]) && $value < $parameters[0]) {
@@ -346,9 +366,27 @@ class Validate
      *
      * @return bool
      */
-    private function required(&$value)
+    private function required($value)
     {
         return !empty($value);
+    }
+
+    /**
+     * Skips any remaining requirements for a field if the
+     * value is empty.
+     *
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    public function skip_empty(&$value)
+    {
+        if (empty($value)) {
+            $value = null;
+            $this->skipRemaining();
+        }
+
+        return true;
     }
 
     /**
@@ -361,7 +399,7 @@ class Validate
      *
      * @return bool
      */
-    private function string(&$value, array $parameters)
+    private function string($value, array $parameters)
     {
         if (!is_string($value)) {
             return false;
@@ -381,7 +419,7 @@ class Validate
      *
      * @return bool
      */
-    private function time_zone(&$value)
+    private function time_zone($value)
     {
         // thanks to http://stackoverflow.com/questions/5816960/how-to-check-is-timezone-identifier-valid-from-code
         $valid = [];
@@ -441,7 +479,7 @@ class Validate
      *
      * @return bool
      */
-    private function url(&$value)
+    private function url($value)
     {
         return filter_var($value, FILTER_VALIDATE_URL);
     }

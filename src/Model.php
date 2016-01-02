@@ -109,9 +109,8 @@ abstract class Model implements \ArrayAccess
     private static $propertyDefinitionBase = [
         'type' => self::TYPE_STRING,
         'mutable' => self::MUTABLE,
-        'null' => false,
+        // TODO move these into validation rules
         'unique' => false,
-        'required' => false,
     ];
 
     /**
@@ -129,12 +128,11 @@ abstract class Model implements \ArrayAccess
         'created_at' => [
             'type' => self::TYPE_DATE,
             'default' => null,
-            'null' => true,
-            'validate' => 'timestamp|db_timestamp',
+            'validate' => 'skip_empty|timestamp|db_timestamp',
         ],
         'updated_at' => [
             'type' => self::TYPE_DATE,
-            'validate' => 'timestamp|db_timestamp',
+            'validate' => 'skip_empty|timestamp|db_timestamp',
         ],
     ];
 
@@ -1293,20 +1291,14 @@ abstract class Model implements \ArrayAccess
         // clear any previous errors
         $this->errors()->clear();
 
-        $validated = true;
-        foreach ($this->_unsaved as $name => &$value) {
-            // nothing to check if the value does not map to a property
-            $property = static::getProperty($name);
-            if ($property === null) {
-                continue;
-            }
+        // run the validator
+        $values = $this->_values + $this->_unsaved;
+        $validator = $this->getValidator($values);
+        $validated = $validator->validate($values);
 
-            $validated = $this->validateValue($name, $property, $value) && $validated;
-        }
-
-        // finally we look for required fields
+        // check for unique values
         // TODO this should be moved into a validation rule
-        if (!$this->hasRequiredValues($this->_values + $this->_unsaved)) {
+        if (!$this->checkUniqueness($values)) {
             $validated = false;
         }
 
@@ -1314,89 +1306,50 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Validates a given property.
+     * Builds a validator for this model.
      *
-     * @param string $name
-     * @param array  $property
-     * @param mixed  $value
-     *
-     * @return bool
+     * @param array $values
+     * 
+     * @return Validator
      */
-    private function validateValue($name, array $property, &$value)
+    private function getValidator(array $values)
     {
-        // assume empty string is a null value for properties
-        // that are marked as optionally-null.
-        // whenever a value is null this skips any validations
-        if ($property['null'] && empty($value)) {
-            $value = null;
+        // build a list of requirements for the validator
+        $requirements = [];
+        foreach (static::$properties as $name => $property) {
+            if (!isset($property['validate'])) {
+                continue;
+            }
 
-            return true;
+            $requirements[$name] = $property['validate'];
         }
 
-        // run property validations
-        $valid = true;
-        if (isset($property['validate']) && is_callable($property['validate'])) {
-            $valid = call_user_func_array($property['validate'], [$value]);
-        } elseif (isset($property['validate'])) {
-            $data = [$name => &$value];
-            $requirements = [$name => $property['validate']];
-            $validator = new Validate($requirements, $this->errors());
-            $valid = $validator->validate($data);
-        }
-
-        if (!$valid) {
-            return false;
-        }
-
-        // check uniqueness constraints
-        // TODO this should be moved into a validation rule
-        if ($property['unique'] && (!$this->_persisted || $value != $this->ignoreUnsaved()->$name)) {
-            $valid = $this->checkUniqueness($name, $property, $value);
-        }
-
-        return $valid;
+        return new Validator($requirements, $this->errors());
     }
 
     /**
      * Checks if a value is unique for that property.
      *
-     * @param string $name
-     * @param array  $property
-     * @param mixed  $value
-     *
-     * @return bool
-     */
-    private function checkUniqueness($name, array $property, $value)
-    {
-        if (static::totalRecords([$name => $value]) > 0) {
-            $this->errors()->add($name, 'pulsar.validation.unique');
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Checks if an input has all of the required values. Adds
-     * messages for any missing values to the error stack.
-     *
      * @param array $values
      *
      * @return bool
      */
-    private function hasRequiredValues(array $values)
+    private function checkUniqueness(array $values)
     {
-        $hasRequired = true;
-        foreach (static::$properties as $name => $property) {
-            if ($property['required'] && !isset($values[$name])) {
-                $property = static::getProperty($name);
-                $this->errors()->add($name, 'pulsar.validation.required');
+        $isUnique = true;
+        foreach ($values as $name => $value) {
+            $property = static::getProperty($name);
+            if (!$property['unique'] || ($this->_persisted && $value == $this->ignoreUnsaved()->$name)) {
+                continue;
+            }
 
-                $hasRequired = false;
+            if (static::totalRecords([$name => $value]) > 0) {
+                $this->errors()->add($name, 'pulsar.validation.unique');
+
+                $isUnique = false;
             }
         }
 
-        return $hasRequired;
+        return $isUnique;
     }
 }

@@ -157,11 +157,6 @@ class DatabaseDriver implements DriverInterface
      */
     public function unserializeValue(array $property, $value)
     {
-        // handle empty strings as null
-        if ($property['null'] && $value == '') {
-            return;
-        }
-
         $type = $property['type'];
 
         // handle boolean values, they might be strings

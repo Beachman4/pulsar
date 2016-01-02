@@ -18,7 +18,7 @@ class TestModel extends Model
     protected static $properties = [
         'relation' => [
             'type' => Model::TYPE_NUMBER,
-            'null' => true,
+            'validate' => 'skip_empty',
         ],
         'answer' => [
             'type' => Model::TYPE_STRING,
@@ -39,7 +39,7 @@ class TestModel extends Model
     {
         self::$properties['test_hook'] = [
             'type' => Model::TYPE_STRING,
-            'null' => true,
+            'validate' => 'skip_empty',
         ];
 
         parent::initialize();
@@ -97,20 +97,19 @@ class TestModel2 extends Model
             'default' => 'some default value',
         ],
         'validate' => [
-            'validate' => 'email',
-            'null' => true,
+            'validate' => 'skip_empty|email',
             'title' => 'Email address',
         ],
         'validate2' => [
-            'validate' => 'validate',
-            'null' => true,
+            'validate' => 'skip_empty|custom:validate',
         ],
         'unique' => [
             'unique' => true,
         ],
         'required' => [
             'type' => Model::TYPE_NUMBER,
-            'required' => true,
+            'validate' => 'required',
+            // 'required' => true,
         ],
         'hidden' => [
             'type' => Model::TYPE_BOOLEAN,

@@ -50,31 +50,28 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
     {
         $driver = new DatabaseDriver(self::$app);
 
-        $property = ['null' => true];
-        $this->assertEquals(null, $driver->unserializeValue($property, ''));
-
-        $property = ['type' => Model::TYPE_STRING, 'null' => false];
+        $property = ['type' => Model::TYPE_STRING];
         $this->assertEquals('string', $driver->unserializeValue($property, 'string'));
 
-        $property = ['type' => Model::TYPE_BOOLEAN, 'null' => false];
+        $property = ['type' => Model::TYPE_BOOLEAN];
         $this->assertTrue($driver->unserializeValue($property, true));
         $this->assertTrue($driver->unserializeValue($property, '1'));
         $this->assertFalse($driver->unserializeValue($property, false));
 
-        $property = ['type' => Model::TYPE_NUMBER, 'null' => false];
+        $property = ['type' => Model::TYPE_NUMBER];
         $this->assertEquals(123, $driver->unserializeValue($property, 123));
         $this->assertEquals(123, $driver->unserializeValue($property, '123'));
 
-        $property = ['type' => Model::TYPE_DATE, 'null' => false];
+        $property = ['type' => Model::TYPE_DATE];
         $this->assertEquals(123, $driver->unserializeValue($property, 123));
         $this->assertEquals(123, $driver->unserializeValue($property, '123'));
         $this->assertEquals(mktime(0, 0, 0, 8, 20, 2015), $driver->unserializeValue($property, 'Aug-20-2015'));
 
-        $property = ['type' => Model::TYPE_ARRAY, 'null' => false];
+        $property = ['type' => Model::TYPE_ARRAY];
         $this->assertEquals(['test' => true], $driver->unserializeValue($property, '{"test":true}'));
         $this->assertEquals(['test' => true], $driver->unserializeValue($property, ['test' => true]));
 
-        $property = ['type' => Model::TYPE_OBJECT, 'null' => false];
+        $property = ['type' => Model::TYPE_OBJECT];
         $expected = new stdClass();
         $expected->test = true;
         $this->assertEquals($expected, $driver->unserializeValue($property, '{"test":true}'));
