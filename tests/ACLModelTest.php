@@ -8,31 +8,16 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-use Infuse\ErrorStack;
-use Infuse\Locale;
 use Pulsar\ACLModel;
-use Pimple\Container;
 
 require_once 'tests/test_models.php';
 
 class ACLModelTest extends PHPUnit_Framework_TestCase
 {
-    public static $app;
     public static $requester;
 
     public static function setUpBeforeClass()
     {
-        // set up DI
-        self::$app = new Container();
-        self::$app['locale'] = function () {
-            return new Locale();
-        };
-        self::$app['errors'] = function ($app) {
-            return new ErrorStack($app);
-        };
-
-        ACLModel::inject(self::$app);
-
         self::$requester = new Person(['id' => 1]);
         ACLModel::setRequester(self::$requester);
     }
@@ -83,29 +68,33 @@ class ACLModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateNoPermission()
     {
-        $errorStack = self::$app['errors']->clear();
+        $model = new TestModelNoPermission();
+        $this->assertFalse($model->create());
 
-        $newModel = new TestModelNoPermission();
-        $this->assertFalse($newModel->create([]));
-        $this->assertCount(1, $errorStack->errors());
+        $errors = $model->errors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals(['pulsar.validation.no_permission'], $errors['create']);
     }
 
     public function testSetNoPermission()
     {
-        $errorStack = self::$app['errors']->clear();
-
         $model = new TestModelNoPermission();
         $model->refreshWith(['id' => 5]);
         $this->assertFalse($model->set(['answer' => 42]));
-        $this->assertCount(1, $errorStack->errors());
+
+        $errors = $model->errors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals(['pulsar.validation.no_permission'], $errors['edit']);
     }
 
     public function testDeleteNoPermission()
     {
-        $errorStack = self::$app['errors']->clear();
         $model = new TestModelNoPermission();
         $model->refreshWith(['id' => 5]);
         $this->assertFalse($model->delete());
-        $this->assertCount(1, $errorStack->errors());
+
+        $errors = $model->errors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals(['pulsar.validation.no_permission'], $errors['delete']);
     }
 }

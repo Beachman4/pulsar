@@ -12,7 +12,9 @@ namespace Pulsar;
 
 abstract class ACLModel extends Model
 {
-    const ERROR_NO_PERMISSION = 'no_permission';
+    const PERMISSION_CREATE = 'create';
+    const PERMISSION_UPDATE = 'edit';
+    const PERMISSION_DELETE = 'delete';
 
     const LISTENER_PRIORITY = 1000;
 
@@ -112,8 +114,9 @@ abstract class ACLModel extends Model
         static::creating(function (ModelEvent $event) {
             $model = $event->getModel();
 
-            if (!$model->can('create', ACLModel::getRequester())) {
-                $model->getApp()['errors']->push(['error' => ACLModel::ERROR_NO_PERMISSION]);
+            $permission = self::PERMISSION_CREATE;
+            if (!$model->can($permission, ACLModel::getRequester())) {
+                $model->errors()->add($permission, 'pulsar.validation.no_permission');
 
                 $event->stopPropagation();
             }
@@ -124,8 +127,9 @@ abstract class ACLModel extends Model
         static::updating(function (ModelEvent $event) {
             $model = $event->getModel();
 
-            if (!$model->can('edit', ACLModel::getRequester())) {
-                $model->getApp()['errors']->push(['error' => ACLModel::ERROR_NO_PERMISSION]);
+            $permission = self::PERMISSION_UPDATE;
+            if (!$model->can($permission, ACLModel::getRequester())) {
+                $model->errors()->add($permission, 'pulsar.validation.no_permission');
 
                 $event->stopPropagation();
             }
@@ -136,8 +140,9 @@ abstract class ACLModel extends Model
         static::deleting(function (ModelEvent $event) {
             $model = $event->getModel();
 
-            if (!$model->can('delete', ACLModel::getRequester())) {
-                $model->getApp()['errors']->push(['error' => ACLModel::ERROR_NO_PERMISSION]);
+            $permission = self::PERMISSION_DELETE;
+            if (!$model->can($permission, ACLModel::getRequester())) {
+                $model->errors()->add($permission, 'pulsar.validation.no_permission');
 
                 $event->stopPropagation();
             }
