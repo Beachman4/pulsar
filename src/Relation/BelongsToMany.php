@@ -16,7 +16,7 @@ class BelongsToMany extends Relation
     {
         $localKey = $this->localKey;
 
-        $this->query->where([$this->foreignKey => $this->relation->$localKey]);
+        $this->query->where($this->foreignKey, $this->relation->$localKey);
     }
 
     public function getResults()
