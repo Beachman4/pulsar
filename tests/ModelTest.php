@@ -882,6 +882,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setDriver($driver);
 
         $this->assertTrue($model->delete());
+        $this->assertFalse($model->persisted());
     }
 
     public function testDeleteWithNoId()
@@ -901,6 +902,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel();
         $model->refreshWith(['id' => 100]);
         $this->assertFalse($model->delete());
+        $this->assertTrue($model->persisted());
     }
 
     public function testDeletedListenerFail()
@@ -919,6 +921,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel();
         $model->refreshWith(['id' => 100]);
         $this->assertFalse($model->delete());
+        $this->assertTrue($model->persisted());
     }
 
     public function testDeleteFail()
@@ -933,6 +936,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setDriver($driver);
 
         $this->assertFalse($model->delete());
+        $this->assertTrue($model->persisted());
     }
 
     /////////////////////////////

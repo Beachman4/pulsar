@@ -916,10 +916,7 @@ abstract class Model implements \ArrayAccess
                 return false;
             }
 
-            // NOTE clear the local cache before the model.deleted
-            // event so that fetching values forces a reload
-            // from the data layer
-            $this->clearCache();
+            $this->_persisted = false;
         }
 
         return $deleted;
