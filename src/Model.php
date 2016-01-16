@@ -134,7 +134,6 @@ abstract class Model implements \ArrayAccess
     private static $timestampProperties = [
         'created_at' => [
             'type' => self::TYPE_DATE,
-            'default' => null,
         ],
         'updated_at' => [
             'type' => self::TYPE_DATE,
@@ -565,22 +564,6 @@ abstract class Model implements \ArrayAccess
         return Inflector::get()->humanize($name);
     }
 
-    /**
-     * Gets the default value for a property.
-     *
-     * @param string|array $property
-     *
-     * @return mixed
-     */
-    public static function getDefaultValueFor($property)
-    {
-        if (!is_array($property)) {
-            $property = static::getProperty($property);
-        }
-
-        return $property ? array_value($property, 'default') : null;
-    }
-
     /////////////////////////////
     // Values
     /////////////////////////////
@@ -626,9 +609,8 @@ abstract class Model implements \ArrayAccess
      *
      * This method looks up values from these locations in this
      * precedence order (least important to most important):
-     *  1. defaults
-     *  2. local values
-     *  3. unsaved values
+     *  1. local values
+     *  2. unsaved values
      *
      * @param array $properties list of property names to fetch values of
      *
@@ -659,9 +641,9 @@ abstract class Model implements \ArrayAccess
             // get relationship values
             } elseif (static::isRelationship($k)) {
                 $result[$k] = $this->loadRelationship($k);
-            // set any missing values to the default value
+            // set any missing values to null
             } elseif ($property = static::getProperty($k)) {
-                $result[$k] = $this->_values[$k] = self::getDefaultValueFor($property);
+                $result[$k] = $this->_values[$k] = null;
             // throw an exception for non-properties that do not
             // have an accessor
             } elseif (!$accessor) {
@@ -750,17 +732,13 @@ abstract class Model implements \ArrayAccess
             }
         }
 
+        // add in any preset values
+        $this->_unsaved = array_replace($this->_values, $this->_unsaved);
+
         // dispatch the model.creating event
         $event = $this->dispatch(ModelEvent::CREATING);
         if ($event->isPropagationStopped()) {
             return false;
-        }
-
-        foreach (static::$properties as $name => $property) {
-            // add in default values
-            if (!array_key_exists($name, $this->_unsaved) && array_key_exists('default', $property)) {
-                $this->_unsaved[$name] = $property['default'];
-            }
         }
 
         // validate the model
@@ -773,7 +751,7 @@ abstract class Model implements \ArrayAccess
         foreach ($this->_unsaved as $k => $value) {
             // remove any non-existent or immutable properties
             $property = static::getProperty($k);
-            if ($property === null || ($property['mutable'] == self::IMMUTABLE && $value !== self::getDefaultValueFor($property))) {
+            if ($property === null || $property['mutable'] == self::IMMUTABLE) {
                 continue;
             }
 

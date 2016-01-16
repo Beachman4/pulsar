@@ -139,7 +139,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'default' => [
                 'type' => Model::TYPE_STRING,
-                'default' => 'some default value',
                 'mutable' => Model::MUTABLE,
             ],
             'validate' => [
@@ -160,22 +159,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'hidden' => [
                 'type' => Model::TYPE_BOOLEAN,
-                'default' => false,
                 'mutable' => Model::MUTABLE,
             ],
             'person_id' => [
                 'type' => Model::TYPE_NUMBER,
-                'default' => 20,
                 'mutable' => Model::MUTABLE,
             ],
             'array' => [
                 'type' => Model::TYPE_ARRAY,
                 'mutable' => Model::MUTABLE,
-                'default' => [
-                    'tax' => '%',
-                    'discounts' => false,
-                    'shipping' => false,
-                ],
             ],
             'object' => [
                 'type' => Model::TYPE_OBJECT,
@@ -187,7 +179,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'created_at' => [
                 'type' => Model::TYPE_DATE,
-                'default' => null,
                 'mutable' => Model::MUTABLE,
             ],
             'updated_at' => [
@@ -241,14 +232,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('Email address', TestModel2::getPropertyTitle('validate'));
         $this->assertEquals('Some property', Model::getPropertyTitle('some_property'));
-    }
-
-    public function testGetDefaultValueFor()
-    {
-        $this->assertNull(TestModel::getDefaultValueFor('id'));
-        $this->assertNull(TestModel::getDefaultValueFor('nonexistent_property'));
-        $this->assertEquals('default', TestModel::getDefaultValueFor(['default' => 'default']));
-        $this->assertEquals('some default value', TestModel2::getDefaultValueFor('default'));
     }
 
     /////////////////////////////
@@ -351,10 +334,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $values);
     }
 
-    public function testGetDefaultFallback()
+    public function testGetWithDefaultValue()
     {
-        $model = new TestModel2(['id' => 12]);
-
+        $model = new TestModel2();
         $this->assertEquals('some default value', $model->default);
     }
 
@@ -529,7 +511,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     'mutable_create_only' => 'test',
                     'default' => 'some default value',
                     'hidden' => false,
-                    'created_at' => null,
                     'array' => [
                         'tax' => '%',
                         'discounts' => false,
