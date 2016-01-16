@@ -18,7 +18,7 @@ class HasOneTest extends PHPUnit_Framework_TestCase
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
         $driver->shouldReceive('queryModels')
-               ->andReturn([['id' => 'result']]);
+               ->andReturn([['id' => 11]]);
 
         Model::setDriver($driver);
     }
@@ -43,6 +43,6 @@ class HasOneTest extends PHPUnit_Framework_TestCase
 
         $result = $relation->getResults();
         $this->assertInstanceOf('TestModel', $result);
-        $this->assertEquals('result', $result->id());
+        $this->assertEquals(11, $result->id());
     }
 }

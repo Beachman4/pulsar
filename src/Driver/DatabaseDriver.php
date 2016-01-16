@@ -129,16 +129,6 @@ class DatabaseDriver implements DriverInterface
             throw $e;
         }
 
-        $properties = $model::getProperties();
-        foreach ($data as &$row) {
-            foreach ($row as $k => &$value) {
-                if (isset($properties[$k])) {
-                    $type = (isset($properties[$k]['type'])) ? $properties[$k]['type'] : Model::TYPE_STRING;
-                    $value = Model::cast($type, $value);
-                }
-            }
-        }
-
         return $data;
     }
 

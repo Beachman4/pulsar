@@ -566,25 +566,25 @@ abstract class Model implements \ArrayAccess
     /**
      * Casts a value to a given type.
      *
-     * @param string $type
-     * @param mixed  $value
+     * @param string|null $type
+     * @param mixed       $value
      *
      * @return mixed casted value
      */
     public static function cast($type, $value)
     {
         // handle boolean values, they might be strings
-        if ($type == self::TYPE_BOOLEAN && is_string($value)) {
+        if ($type === self::TYPE_BOOLEAN && is_string($value)) {
             return ($value == '1') ? true : false;
         }
 
         // cast numbers as....numbers
-        if ($type == self::TYPE_NUMBER) {
+        if ($type === self::TYPE_NUMBER) {
             return $value + 0;
         }
 
         // cast dates as numbers also
-        if ($type == self::TYPE_DATE) {
+        if ($type === self::TYPE_DATE) {
             if (!is_numeric($value)) {
                 return strtotime($value);
             } else {
@@ -593,12 +593,12 @@ abstract class Model implements \ArrayAccess
         }
 
         // decode JSON into an array
-        if ($type == self::TYPE_ARRAY && is_string($value)) {
+        if ($type === self::TYPE_ARRAY && is_string($value)) {
             return (array) json_decode($value, true);
         }
 
         // decode JSON into an object
-        if ($type == self::TYPE_OBJECT && is_string($value)) {
+        if ($type === self::TYPE_OBJECT && is_string($value)) {
             return (object) json_decode($value);
         }
 
@@ -974,6 +974,14 @@ abstract class Model implements \ArrayAccess
      */
     public function refreshWith(array $values)
     {
+        // cast the values
+        foreach ($values as $k => &$value) {
+            if (isset(static::$properties[$k])) {
+                $type = array_value(static::$properties[$k], 'type');
+                $value = self::cast($type, $value);
+            }
+        }
+
         $this->_persisted = true;
         $this->_values = $values;
         $this->_unsaved = [];

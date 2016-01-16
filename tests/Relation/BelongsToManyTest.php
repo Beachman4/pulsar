@@ -18,7 +18,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
         $driver->shouldReceive('queryModels')
-               ->andReturn([['id' => 'result'], ['id' => 'result2']]);
+               ->andReturn([['id' => 11], ['id' => 12]]);
 
         Model::setDriver($driver);
     }
@@ -48,7 +48,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
             $this->assertInstanceOf('TestModel', $m);
         }
 
-        $this->assertEquals('result', $result[0]->id());
-        $this->assertEquals('result2', $result[1]->id());
+        $this->assertEquals(11, $result[0]->id());
+        $this->assertEquals(12, $result[1]->id());
     }
 }
