@@ -116,7 +116,6 @@ abstract class Model implements \ArrayAccess
      * @staticvar array
      */
     private static $propertyDefinitionBase = [
-        'type' => self::TYPE_STRING,
         'mutable' => self::MUTABLE,
     ];
 
@@ -562,6 +561,48 @@ abstract class Model implements \ArrayAccess
         }
 
         return Inflector::get()->humanize($name);
+    }
+
+    /**
+     * Casts a value to a given type.
+     *
+     * @param string $type
+     * @param mixed  $value
+     *
+     * @return mixed casted value
+     */
+    public static function cast($type, $value)
+    {
+        // handle boolean values, they might be strings
+        if ($type == self::TYPE_BOOLEAN && is_string($value)) {
+            return ($value == '1') ? true : false;
+        }
+
+        // cast numbers as....numbers
+        if ($type == self::TYPE_NUMBER) {
+            return $value + 0;
+        }
+
+        // cast dates as numbers also
+        if ($type == self::TYPE_DATE) {
+            if (!is_numeric($value)) {
+                return strtotime($value);
+            } else {
+                return $value + 0;
+            }
+        }
+
+        // decode JSON into an array
+        if ($type == self::TYPE_ARRAY && is_string($value)) {
+            return (array) json_decode($value, true);
+        }
+
+        // decode JSON into an object
+        if ($type == self::TYPE_OBJECT && is_string($value)) {
+            return (object) json_decode($value);
+        }
+
+        return $value;
     }
 
     /////////////////////////////

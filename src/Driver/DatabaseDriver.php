@@ -59,7 +59,7 @@ class DatabaseDriver implements DriverInterface
             throw $e;
         }
 
-        return $this->unserializeValue($model::getProperty($propertyName), $id);
+        return Model::cast($model::getProperty($propertyName)['type'], $id);
     }
 
     public function updateModel(Model $model, array $parameters)
@@ -131,7 +131,12 @@ class DatabaseDriver implements DriverInterface
 
         $properties = $model::getProperties();
         foreach ($data as &$row) {
-            $row = $this->unserialize($row, $properties);
+            foreach ($row as $k => &$value) {
+                if (isset($properties[$k])) {
+                    $type = (isset($properties[$k]['type'])) ? $properties[$k]['type'] : Model::TYPE_STRING;
+                    $value = Model::cast($type, $value);
+                }
+            }
         }
 
         return $data;
@@ -186,50 +191,6 @@ class DatabaseDriver implements DriverInterface
     }
 
     /**
-     * Marshals a value for a given property from storage.
-     *
-     * @param array $property
-     * @param mixed $value
-     *
-     * @return mixed unserialized value
-     */
-    public function unserializeValue(array $property, $value)
-    {
-        $type = $property['type'];
-
-        // handle boolean values, they might be strings
-        if ($type == Model::TYPE_BOOLEAN && is_string($value)) {
-            return ($value == '1') ? true : false;
-        }
-
-        // cast numbers as....numbers
-        if ($type == Model::TYPE_NUMBER) {
-            return $value + 0;
-        }
-
-        // cast dates as numbers also
-        if ($type == Model::TYPE_DATE) {
-            if (!is_numeric($value)) {
-                return strtotime($value);
-            } else {
-                return $value + 0;
-            }
-        }
-
-        // decode JSON into an array
-        if ($type == Model::TYPE_ARRAY && is_string($value)) {
-            return (array) json_decode($value, true);
-        }
-
-        // decode JSON into an object
-        if ($type == Model::TYPE_OBJECT && is_string($value)) {
-            return (object) json_decode($value);
-        }
-
-        return $value;
-    }
-
-    /**
      * Serializes an array of values.
      *
      * @param array $values
@@ -240,25 +201,6 @@ class DatabaseDriver implements DriverInterface
     {
         foreach ($values as &$value) {
             $value = $this->serializeValue($value);
-        }
-
-        return $values;
-    }
-
-    /**
-     * Unserializes an array of values.
-     *
-     * @param array $values
-     * @param array $properties model properties
-     *
-     * @return array
-     */
-    private function unserialize(array $values, array $properties)
-    {
-        foreach ($values as $k => &$value) {
-            if (isset($properties[$k])) {
-                $value = $this->unserializeValue($properties[$k], $value);
-            }
         }
 
         return $values;

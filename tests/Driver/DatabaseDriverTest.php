@@ -8,7 +8,6 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-use Pulsar\Model;
 use Pulsar\Driver\DatabaseDriver;
 use Pulsar\Query;
 use Pimple\Container;
@@ -44,38 +43,6 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $obj = new stdClass();
         $obj->test = true;
         $this->assertEquals('{"test":true}', $driver->serializeValue($obj));
-    }
-
-    public function testUnserializeValue()
-    {
-        $driver = new DatabaseDriver(self::$app);
-
-        $property = ['type' => Model::TYPE_STRING];
-        $this->assertEquals('string', $driver->unserializeValue($property, 'string'));
-
-        $property = ['type' => Model::TYPE_BOOLEAN];
-        $this->assertTrue($driver->unserializeValue($property, true));
-        $this->assertTrue($driver->unserializeValue($property, '1'));
-        $this->assertFalse($driver->unserializeValue($property, false));
-
-        $property = ['type' => Model::TYPE_NUMBER];
-        $this->assertEquals(123, $driver->unserializeValue($property, 123));
-        $this->assertEquals(123, $driver->unserializeValue($property, '123'));
-
-        $property = ['type' => Model::TYPE_DATE];
-        $this->assertEquals(123, $driver->unserializeValue($property, 123));
-        $this->assertEquals(123, $driver->unserializeValue($property, '123'));
-        $this->assertEquals(mktime(0, 0, 0, 8, 20, 2015), $driver->unserializeValue($property, 'Aug-20-2015'));
-
-        $property = ['type' => Model::TYPE_ARRAY];
-        $this->assertEquals(['test' => true], $driver->unserializeValue($property, '{"test":true}'));
-        $this->assertEquals(['test' => true], $driver->unserializeValue($property, ['test' => true]));
-
-        $property = ['type' => Model::TYPE_OBJECT];
-        $expected = new stdClass();
-        $expected->test = true;
-        $this->assertEquals($expected, $driver->unserializeValue($property, '{"test":true}'));
-        $this->assertEquals($expected, $driver->unserializeValue($property, $expected));
     }
 
     public function testCreateModel()

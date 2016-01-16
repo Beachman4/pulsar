@@ -81,19 +81,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
             ],
             'test_hook' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'mutator' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'accessor' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'test_model2_id' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
         ];
@@ -138,19 +134,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
             ],
             'default' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'validate' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'validate2' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'unique' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE,
             ],
             'required' => [
@@ -174,7 +166,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
             ],
             'mutable_create_only' => [
-                'type' => Model::TYPE_STRING,
                 'mutable' => Model::MUTABLE_CREATE_ONLY,
             ],
             'created_at' => [
@@ -232,6 +223,30 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('Email address', TestModel2::getPropertyTitle('validate'));
         $this->assertEquals('Some property', Model::getPropertyTitle('some_property'));
+    }
+
+    public function testCast()
+    {
+        $this->assertEquals('string', TestModel::cast(Model::TYPE_STRING, 'string'));
+
+        $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, true));
+        $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, '1'));
+        $this->assertFalse(TestModel::cast(Model::TYPE_BOOLEAN, false));
+
+        $this->assertEquals(123, TestModel::cast(Model::TYPE_NUMBER, 123));
+        $this->assertEquals(123, TestModel::cast(Model::TYPE_NUMBER, '123'));
+
+        $this->assertEquals(123, TestModel::cast(Model::TYPE_DATE, 123));
+        $this->assertEquals(123, TestModel::cast(Model::TYPE_DATE, '123'));
+        $this->assertEquals(mktime(0, 0, 0, 8, 20, 2015), TestModel::cast(Model::TYPE_DATE, 'Aug-20-2015'));
+
+        $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, '{"test":true}'));
+        $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, ['test' => true]));
+
+        $expected = new stdClass();
+        $expected->test = true;
+        $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, '{"test":true}'));
+        $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, $expected));
     }
 
     /////////////////////////////
