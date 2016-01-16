@@ -460,6 +460,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($newModel->create($params));
         $this->assertEquals(1, $newModel->id());
         $this->assertEquals(1, $newModel->id);
+        $this->assertEquals(42, $newModel->answer);
     }
 
     public function testCreateWithSave()
@@ -700,6 +701,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->answer = 42;
 
         $this->assertTrue($model->set());
+        $this->assertEquals(42, $model->answer);
     }
 
     public function testSetFromSave()
@@ -1146,13 +1148,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $person = $model->person;
         $this->assertInstanceOf('Person', $person);
         $this->assertEquals('10', $person->id);
-
-        // test if relation model is cached
-        $model->clearCache();
-        $model->person_id = '11';
-        $person = $model->person;
-        $this->assertInstanceOf('Person', $person);
-        $this->assertEquals('11', $person->id);
     }
 
     public function testSetRelationship()
@@ -1175,11 +1170,16 @@ class ModelTest extends PHPUnit_Framework_TestCase
     // STORAGE
     /////////////////////////////
 
+    public function testRefreshNotPersisted()
+    {
+        $this->setExpectedException('Pulsar\Exception\NotFoundException');
+
+        $model = new TestModel2();
+        $model->refresh();
+    }
+
     public function testRefresh()
     {
-        $model = new TestModel2();
-        $this->assertEquals($model, $model->refresh());
-
         $model = new TestModel2();
         $model->refreshWith(['id' => 12, 'id2' => 13]);
 

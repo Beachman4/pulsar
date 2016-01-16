@@ -72,13 +72,18 @@ trait Cacheable
         return parent::refreshWith($values)->cache();
     }
 
+    /**
+     * Clears the cache for this model.
+     *
+     * @return self
+     */
     public function clearCache()
     {
         if (self::$cachePool) {
             $this->getCacheItem()->clear();
         }
 
-        return parent::clearCache();
+        return $this;
     }
 
     /**

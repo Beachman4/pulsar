@@ -784,22 +784,16 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // determine the model's new ID
-        $ids = $this->getNewIds();
-
-        // NOTE clear the local cache before the model.created
-        // event so that fetching values forces a reload
-        // from the data layer
-        $this->clearCache();
-        $this->_values = $ids;
+        // update the model with the persisted values and new ID(s)
+        $newValues = array_replace(
+            $insertValues,
+            $this->getNewIds());
+        $this->refreshWith($newValues);
 
         // dispatch the model.created event
         $event = $this->dispatch(ModelEvent::CREATED);
-        if ($event->isPropagationStopped()) {
-            return false;
-        }
 
-        return true;
+        return !$event->isPropagationStopped();
     }
 
     /**
@@ -876,18 +870,13 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // clear the local cache before the model.updated
-        // event so that fetching values forces a reload
-        // from the data layer
-        $this->clearCache();
+        // update the model with the persisted values
+        $this->refreshWith($updateValues);
 
         // dispatch the model.updated event
         $event = $this->dispatch(ModelEvent::UPDATED);
-        if ($event->isPropagationStopped()) {
-            return false;
-        }
 
-        return true;
+        return !$event->isPropagationStopped();
     }
 
     /**
@@ -936,11 +925,13 @@ abstract class Model implements \ArrayAccess
      * Loads the model from the data layer.
      *
      * @return self
+     *
+     * @throws NotFoundException
      */
     public function refresh()
     {
         if (!$this->_persisted) {
-            return $this;
+            throw new NotFoundException('Cannot call refresh() before '.static::modelName().' has been persisted');
         }
 
         $query = static::query();
@@ -966,19 +957,7 @@ abstract class Model implements \ArrayAccess
     {
         $this->_persisted = true;
         $this->_values = $values;
-
-        return $this;
-    }
-
-    /**
-     * Clears the cache for this model.
-     *
-     * @return self
-     */
-    public function clearCache()
-    {
         $this->_unsaved = [];
-        $this->_values = [];
 
         return $this;
     }

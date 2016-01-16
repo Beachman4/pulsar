@@ -49,9 +49,6 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
         $this->assertNull($model->getCachePool());
         $this->assertNull($model->getCacheItem());
         $this->assertEquals($model, $model->refreshWith(['id' => 5, 'answer' => 42]));
-
-        $model = new CacheableModel();
-        $this->assertEquals($model, $model->refresh());
     }
 
     public function testGetCacheTTL()
