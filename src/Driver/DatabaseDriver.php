@@ -11,8 +11,10 @@
 namespace Pulsar\Driver;
 
 use ICanBoogie\Inflector;
+use Pulsar\Exception\DriverException;
 use Pulsar\Model;
 use Pulsar\Query;
+use PDOException;
 use PDOStatement;
 use Pimple\Container;
 
@@ -36,14 +38,26 @@ class DatabaseDriver implements DriverInterface
         $values = $this->serialize($parameters);
         $tablename = $this->getTablename($model);
 
-        return $this->app['db']->insert($values)
-            ->into($tablename)
-            ->execute() instanceof PDOStatement;
+        try {
+            return $this->app['db']->insert($values)
+                ->into($tablename)
+                ->execute() instanceof PDOStatement;
+        } catch (PDOException $original) {
+            $e = new DriverException('An error occurred in the database driver when creating the '.$model::modelName());
+            $e->setException($original);
+            throw $e;
+        }
     }
 
     public function getCreatedID(Model $model, $propertyName)
     {
-        $id = $this->app['db']->getPDO()->lastInsertId();
+        try {
+            $id = $this->app['db']->getPDO()->lastInsertId();
+        } catch (PDOException $original) {
+            $e = new DriverException('An error occurred in the database driver when getting the ID of the new '.$model::modelName());
+            $e->setException($original);
+            throw $e;
+        }
 
         return $this->unserializeValue($model::getProperty($propertyName), $id);
     }
@@ -57,19 +71,31 @@ class DatabaseDriver implements DriverInterface
         $values = $this->serialize($parameters);
         $tablename = $this->getTablename($model);
 
-        return $this->app['db']->update($tablename)
-            ->values($values)
-            ->where($model->ids())
-            ->execute() instanceof PDOStatement;
+        try {
+            return $this->app['db']->update($tablename)
+                ->values($values)
+                ->where($model->ids())
+                ->execute() instanceof PDOStatement;
+        } catch (PDOException $original) {
+            $e = new DriverException('An error occurred in the database driver when updating the '.$model::modelName());
+            $e->setException($original);
+            throw $e;
+        }
     }
 
     public function deleteModel(Model $model)
     {
         $tablename = $this->getTablename($model);
 
-        return $this->app['db']->delete($tablename)
-            ->where($model->ids())
-            ->execute() instanceof PDOStatement;
+        try {
+            return $this->app['db']->delete($tablename)
+                ->where($model->ids())
+                ->execute() instanceof PDOStatement;
+        } catch (PDOException $original) {
+            $e = new DriverException('An error occurred in the database driver while deleting the '.$model::modelName());
+            $e->setException($original);
+            throw $e;
+        }
     }
 
     public function queryModels(Query $query)
@@ -95,7 +121,13 @@ class DatabaseDriver implements DriverInterface
             $dbQuery->join($foreignTablename, $condition);
         }
 
-        $data = $dbQuery->all();
+        try {
+            $data = $dbQuery->all();
+        } catch (PDOException $original) {
+            $e = new DriverException('An error occurred in the database driver while performing the '.$model::modelName().' query');
+            $e->setException($original);
+            throw $e;
+        }
 
         $properties = $model::getProperties();
         foreach ($data as &$row) {
@@ -110,10 +142,16 @@ class DatabaseDriver implements DriverInterface
         $model = $query->getModel();
         $tablename = $this->getTablename($model);
 
-        return (int) $this->app['db']->select('count(*)')
-            ->from($tablename)
-            ->where($query->getWhere())
-            ->scalar();
+        try {
+            return (int) $this->app['db']->select('count(*)')
+                ->from($tablename)
+                ->where($query->getWhere())
+                ->scalar();
+        } catch (PDOException $original) {
+            $e = new DriverException('An error occurred in the database driver while getting the number of '.$model::modelName().' objects');
+            $e->setException($original);
+            throw $e;
+        }
     }
 
     /**
