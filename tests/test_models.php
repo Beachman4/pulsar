@@ -17,7 +17,7 @@ class TestModel extends Model
 {
     protected static $properties = [
         'relation' => [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
         ],
         'answer' => [
             'type' => Model::TYPE_STRING,
@@ -90,23 +90,23 @@ class TestModel2 extends Model
 
     protected static $properties = [
         'id' => [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
         ],
         'id2' => [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
         ],
         'default' => [],
         'validate' => [],
         'validate2' => [],
         'unique' => [],
         'required' => [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
         ],
         'hidden' => [
             'type' => Model::TYPE_BOOLEAN,
         ],
         'person_id' => [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
         ],
         'array' => [
             'type' => Model::TYPE_ARRAY,

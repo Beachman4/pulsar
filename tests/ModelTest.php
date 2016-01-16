@@ -69,11 +69,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $expected = [
             'id' => [
-                'type' => Model::TYPE_NUMBER,
+                'type' => Model::TYPE_INTEGER,
                 'mutable' => Model::IMMUTABLE,
             ],
             'relation' => [
-                'type' => Model::TYPE_NUMBER,
+                'type' => Model::TYPE_INTEGER,
                 'mutable' => Model::MUTABLE,
             ],
             'answer' => [
@@ -110,13 +110,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testGetProperty()
     {
         $expected = [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
             'mutable' => Model::IMMUTABLE,
         ];
         $this->assertEquals($expected, TestModel::getProperty('id'));
 
         $expected = [
-            'type' => Model::TYPE_NUMBER,
+            'type' => Model::TYPE_INTEGER,
             'mutable' => Model::MUTABLE,
         ];
         $this->assertEquals($expected, TestModel::getProperty('relation'));
@@ -126,11 +126,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $expected = [
             'id' => [
-                'type' => Model::TYPE_NUMBER,
+                'type' => Model::TYPE_INTEGER,
                 'mutable' => Model::MUTABLE,
             ],
             'id2' => [
-                'type' => Model::TYPE_NUMBER,
+                'type' => Model::TYPE_INTEGER,
                 'mutable' => Model::MUTABLE,
             ],
             'default' => [
@@ -146,7 +146,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
             ],
             'required' => [
-                'type' => Model::TYPE_NUMBER,
+                'type' => Model::TYPE_INTEGER,
                 'mutable' => Model::MUTABLE,
             ],
             'hidden' => [
@@ -154,7 +154,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
                 'mutable' => Model::MUTABLE,
             ],
             'person_id' => [
-                'type' => Model::TYPE_NUMBER,
+                'type' => Model::TYPE_INTEGER,
                 'mutable' => Model::MUTABLE,
             ],
             'array' => [
@@ -227,14 +227,19 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCast()
     {
+        $this->assertNull(TestModel::cast(Model::TYPE_STRING, null));
+
         $this->assertEquals('string', TestModel::cast(Model::TYPE_STRING, 'string'));
+
+        $this->assertEquals(123, TestModel::cast(Model::TYPE_INTEGER, 123));
+        $this->assertEquals(123, TestModel::cast(Model::TYPE_INTEGER, '123'));
+
+        $this->assertEquals(1.23, TestModel::cast(Model::TYPE_FLOAT, 1.23));
+        $this->assertEquals(123.0, TestModel::cast(Model::TYPE_FLOAT, '123'));
 
         $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, true));
         $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, '1'));
         $this->assertFalse(TestModel::cast(Model::TYPE_BOOLEAN, false));
-
-        $this->assertEquals(123, TestModel::cast(Model::TYPE_NUMBER, 123));
-        $this->assertEquals(123, TestModel::cast(Model::TYPE_NUMBER, '123'));
 
         $this->assertEquals(123, TestModel::cast(Model::TYPE_DATE, 123));
         $this->assertEquals(123, TestModel::cast(Model::TYPE_DATE, '123'));
@@ -247,6 +252,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected->test = true;
         $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, '{"test":true}'));
         $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, $expected));
+
+        $this->assertEquals('string', TestModel::cast('unknown_type', 'string'));
     }
 
     /////////////////////////////

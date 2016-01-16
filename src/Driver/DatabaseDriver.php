@@ -59,7 +59,7 @@ class DatabaseDriver implements DriverInterface
             throw $e;
         }
 
-        return Model::cast($model::getProperty($propertyName)['type'], $id);
+        return $id;
     }
 
     public function updateModel(Model $model, array $parameters)

@@ -31,7 +31,8 @@ abstract class Model implements \ArrayAccess
     const MUTABLE = 2;
 
     const TYPE_STRING = 'string';
-    const TYPE_NUMBER = 'number';
+    const TYPE_INTEGER = 'integer';
+    const TYPE_FLOAT = 'float';
     const TYPE_BOOLEAN = 'boolean';
     const TYPE_DATE = 'date';
     const TYPE_OBJECT = 'object';
@@ -123,7 +124,7 @@ abstract class Model implements \ArrayAccess
      * @staticvar array
      */
     private static $defaultIDProperty = [
-        'type' => self::TYPE_NUMBER,
+        'type' => self::TYPE_INTEGER,
         'mutable' => self::IMMUTABLE,
     ];
 
@@ -573,36 +574,50 @@ abstract class Model implements \ArrayAccess
      */
     public static function cast($type, $value)
     {
-        // handle boolean values, they might be strings
-        if ($type === self::TYPE_BOOLEAN && is_string($value)) {
-            return ($value == '1') ? true : false;
+        if ($value === null) {
+            return;
         }
 
-        // cast numbers as....numbers
-        if ($type === self::TYPE_NUMBER) {
-            return $value + 0;
-        }
+        switch ($type) {
+        case self::TYPE_STRING:
+            return (string) $value;
 
-        // cast dates as numbers also
-        if ($type === self::TYPE_DATE) {
+        case self::TYPE_INTEGER:
+            return (int) $value;
+
+        case self::TYPE_FLOAT:
+            return (float) $value;
+
+        case self::TYPE_BOOLEAN:
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+
+        case self::TYPE_DATE:
+            // cast dates as unix timestamps
             if (!is_numeric($value)) {
                 return strtotime($value);
             } else {
                 return $value + 0;
             }
-        }
 
-        // decode JSON into an array
-        if ($type === self::TYPE_ARRAY && is_string($value)) {
-            return (array) json_decode($value, true);
-        }
+        case self::TYPE_ARRAY:
+            // decode JSON into an array
+            if (is_string($value)) {
+                return json_decode($value, true);
+            } else {
+                return (array) $value;
+            }
 
-        // decode JSON into an object
-        if ($type === self::TYPE_OBJECT && is_string($value)) {
-            return (object) json_decode($value);
-        }
+        case self::TYPE_OBJECT:
+            // decode JSON into an object
+            if (is_string($value)) {
+                return (object) json_decode($value);
+            } else {
+                return (object) $value;
+            }
 
-        return $value;
+        default:
+            return $value;
+        }
     }
 
     /////////////////////////////
@@ -976,8 +991,8 @@ abstract class Model implements \ArrayAccess
     {
         // cast the values
         foreach ($values as $k => &$value) {
-            if (isset(static::$properties[$k])) {
-                $type = array_value(static::$properties[$k], 'type');
+            $type = array_value(static::$properties, "$k.type");
+            if ($type) {
                 $value = self::cast($type, $value);
             }
         }
