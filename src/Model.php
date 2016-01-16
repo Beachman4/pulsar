@@ -746,7 +746,7 @@ abstract class Model implements \ArrayAccess
 
         if (!empty($data)) {
             foreach ($data as $k => $value) {
-                $this->$k = $value;
+                $this->setValue($k, $value);
             }
         }
 
@@ -834,7 +834,7 @@ abstract class Model implements \ArrayAccess
 
         if (!empty($data)) {
             foreach ($data as $k => $value) {
-                $this->$k = $value;
+                $this->setValue($k, $value);
             }
         }
 
