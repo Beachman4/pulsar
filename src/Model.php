@@ -114,19 +114,15 @@ abstract class Model implements \ArrayAccess
      * @staticvar array
      */
     private static $defaultIDProperty = [
-        'type' => self::TYPE_INTEGER,
+        self::DEFAULT_ID_PROPERTY => self::TYPE_INTEGER,
     ];
 
     /**
      * @staticvar array
      */
     private static $timestampProperties = [
-        'created_at' => [
-            'type' => self::TYPE_DATE,
-        ],
-        'updated_at' => [
-            'type' => self::TYPE_DATE,
-        ],
+        'created_at' => self::TYPE_DATE,
+        'updated_at' => self::TYPE_DATE,
     ];
 
     /**
@@ -197,20 +193,29 @@ abstract class Model implements \ArrayAccess
     protected function initialize()
     {
         // add in the default ID property
-        if (static::$ids == [self::DEFAULT_ID_PROPERTY] && !isset(static::$properties[self::DEFAULT_ID_PROPERTY])) {
-            static::$properties[self::DEFAULT_ID_PROPERTY] = self::$defaultIDProperty;
+        if (static::$ids == [self::DEFAULT_ID_PROPERTY]) {
+            static::$properties[] = self::DEFAULT_ID_PROPERTY;
+
+            if (property_exists($this, 'casts')) {
+                static::$casts = array_replace(self::$defaultIDProperty, static::$casts);
+            }
         }
 
         // add in the auto timestamp properties
-        if (property_exists(get_called_class(), 'autoTimestamps')) {
-            static::$properties = array_replace(self::$timestampProperties, static::$properties);
+        if (property_exists($this, 'autoTimestamps')) {
+            static::$properties[] = 'created_at';
+            static::$properties[] = 'updated_at';
+
+            if (property_exists($this, 'casts')) {
+                static::$casts = array_replace(self::$timestampProperties, static::$casts);
+            }
 
             static::$validations = array_replace(self::$timestampValidations, static::$validations);
         }
 
         // order the properties array by name for consistency
         // since it is constructed in a random order
-        ksort(static::$properties);
+        sort(static::$properties);
     }
 
     /**
@@ -395,28 +400,6 @@ abstract class Model implements \ArrayAccess
     /////////////////////////////
 
     /**
-     * Gets all the property definitions for the model.
-     *
-     * @return array key-value map of properties
-     */
-    public static function getProperties()
-    {
-        return static::$properties;
-    }
-
-    /**
-     * Gets a property defition for the model.
-     *
-     * @param string $property property to lookup
-     *
-     * @return array|null property
-     */
-    public static function getProperty($property)
-    {
-        return array_value(static::$properties, $property);
-    }
-
-    /**
      * Gets the names of the model ID properties.
      *
      * @return array
@@ -456,7 +439,7 @@ abstract class Model implements \ArrayAccess
      */
     public static function hasProperty($property)
     {
-        return isset(static::$properties[$property]);
+        return in_array($property, static::$properties);
     }
 
     /**
@@ -548,6 +531,20 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Gets the type cast for a property.
+     *
+     * @param string $name
+     *
+     * @return string|null
+     */
+    public static function getPropertyType($name)
+    {
+        if (property_exists(get_called_class(), 'casts')) {
+            return array_value(static::$casts, $name);
+        }
+    }
+
+    /**
      * Casts a value to a given type.
      *
      * @param string|null $type
@@ -624,9 +621,8 @@ abstract class Model implements \ArrayAccess
         }
 
         // cast the value
-        $type = array_value(static::$properties, "$name.type");
-        if ($type) {
-            $value = self::cast($type, $value);
+        if ($type = static::getPropertyType($name)) {
+            $value = static::cast($type, $value);
         }
 
         // set using any mutators
@@ -747,11 +743,9 @@ abstract class Model implements \ArrayAccess
     public function toArray()
     {
         // build the list of properties to retrieve
-        $properties = array_keys(static::$properties);
-
         // remove any hidden properties
         $hide = (property_exists($this, 'hidden')) ? static::$hidden : [];
-        $properties = array_diff($properties, $hide);
+        $properties = array_diff(static::$properties, $hide);
 
         // add any appended properties
         $append = (property_exists($this, 'appended')) ? static::$appended : [];
@@ -824,8 +818,7 @@ abstract class Model implements \ArrayAccess
         $insertValues = [];
         foreach ($this->_unsaved as $k => $value) {
             // remove any non-existent properties
-            $property = static::getProperty($k);
-            if ($property === null) {
+            if (!static::hasProperty($k)) {
                 continue;
             }
 
@@ -858,7 +851,6 @@ abstract class Model implements \ArrayAccess
         $ids = [];
         foreach (static::$ids as $k) {
             // check if the ID property was already given,
-            $property = static::getProperty($k);
             if (isset($this->_unsaved[$k])) {
                 $ids[$k] = $this->_unsaved[$k];
             // otherwise, get it from the data layer (i.e. auto-incrementing IDs)
@@ -908,8 +900,7 @@ abstract class Model implements \ArrayAccess
         $updateValues = [];
         foreach ($this->_unsaved as $k => $value) {
             // remove any non-existent properties
-            $property = static::getProperty($k);
-            if ($property === null) {
+            if (!static::hasProperty($k)) {
                 continue;
             }
 
@@ -1006,10 +997,11 @@ abstract class Model implements \ArrayAccess
     public function refreshWith(array $values)
     {
         // cast the values
-        foreach ($values as $k => &$value) {
-            $type = array_value(static::$properties, "$k.type");
-            if ($type) {
-                $value = self::cast($type, $value);
+        if (property_exists($this, 'casts')) {
+            foreach ($values as $k => &$value) {
+                if ($type = static::getPropertyType($k)) {
+                    $value = static::cast($type, $value);
+                }
             }
         }
 

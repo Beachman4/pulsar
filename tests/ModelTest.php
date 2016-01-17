@@ -65,86 +65,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setDriver($driver);
     }
 
-    public function testGetProperties()
-    {
-        $expected = [
-            'id' => [
-                'type' => Model::TYPE_INTEGER,
-            ],
-            'relation' => [
-                'type' => Model::TYPE_INTEGER,
-            ],
-            'answer' => [],
-            'test_hook' => [],
-            'mutator' => [],
-            'accessor' => [],
-            'test_model2_id' => [],
-        ];
-
-        $this->assertEquals($expected, TestModel::getProperties());
-    }
-
-    public function testPropertiesIdOverwrite()
-    {
-        $expected = [
-            'type' => Model::TYPE_STRING,
-        ];
-
-        $this->assertEquals($expected, Person::getProperty('id'));
-    }
-
-    public function testGetProperty()
-    {
-        $expected = [
-            'type' => Model::TYPE_INTEGER,
-        ];
-        $this->assertEquals($expected, TestModel::getProperty('id'));
-
-        $expected = [
-            'type' => Model::TYPE_INTEGER,
-        ];
-        $this->assertEquals($expected, TestModel::getProperty('relation'));
-    }
-
-    public function testPropertiesAutoTimestamps()
-    {
-        $expected = [
-            'id' => [
-                'type' => Model::TYPE_INTEGER,
-            ],
-            'id2' => [
-                'type' => Model::TYPE_INTEGER,
-            ],
-            'default' => [],
-            'validate' => [],
-            'validate2' => [],
-            'unique' => [],
-            'required' => [],
-            'hidden' => [
-                'type' => Model::TYPE_BOOLEAN,
-            ],
-            'person_id' => [
-                'type' => Model::TYPE_INTEGER,
-            ],
-            'array' => [
-                'type' => Model::TYPE_ARRAY,
-            ],
-            'object' => [
-                'type' => Model::TYPE_OBJECT,
-            ],
-            'protected' => [],
-            'created_at' => [
-                'type' => Model::TYPE_DATE,
-            ],
-            'updated_at' => [
-                'type' => Model::TYPE_DATE,
-            ],
-        ];
-
-        $model = new TestModel2(); // forces initialize()
-        $this->assertEquals($expected, TestModel2::getProperties());
-    }
-
     public function testGetIdProperties()
     {
         $this->assertEquals(['id'], TestModel::getIdProperties());
@@ -186,6 +106,15 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('Email address', TestModel2::getPropertyTitle('validate'));
         $this->assertEquals('Some property', Model::getPropertyTitle('some_property'));
+    }
+
+    public function testGetPropertyType()
+    {
+        $this->assertNull(TestModel::getPropertyType('nonexistent_property'));
+        $this->assertEquals(Model::TYPE_INTEGER, TestModel::getPropertyType('relation'));
+        $this->assertEquals(Model::TYPE_INTEGER, TestModel::getPropertyType('id'));
+        $this->assertEquals(Model::TYPE_DATE, TestModel2::getPropertyType('created_at'));
+        $this->assertEquals(Model::TYPE_DATE, TestModel2::getPropertyType('updated_at'));
     }
 
     public function testCast()

@@ -16,13 +16,15 @@ use Pulsar\Query;
 class TestModel extends Model
 {
     protected static $properties = [
-        'relation' => [
-            'type' => Model::TYPE_INTEGER,
-        ],
-        'answer' => [],
-        'mutator' => [],
-        'accessor' => [],
-        'test_model2_id' => [],
+        'relation',
+        'answer',
+        'mutator',
+        'accessor',
+        'test_model2_id',
+    ];
+
+    protected static $casts = [
+        'relation' => Model::TYPE_INTEGER,
     ];
 
     protected static $validations = [
@@ -42,7 +44,7 @@ class TestModel extends Model
 
     protected function initialize()
     {
-        self::$properties['test_hook'] = [];
+        self::$properties[] = 'test_hook';
 
         parent::initialize();
     }
@@ -89,30 +91,27 @@ class TestModel2 extends Model
     protected static $ids = ['id', 'id2'];
 
     protected static $properties = [
-        'id' => [
-            'type' => Model::TYPE_INTEGER,
-        ],
-        'id2' => [
-            'type' => Model::TYPE_INTEGER,
-        ],
-        'default' => [],
-        'validate' => [],
-        'validate2' => [],
-        'unique' => [],
-        'required' => [],
-        'hidden' => [
-            'type' => Model::TYPE_BOOLEAN,
-        ],
-        'person_id' => [
-            'type' => Model::TYPE_INTEGER,
-        ],
-        'array' => [
-            'type' => Model::TYPE_ARRAY,
-        ],
-        'object' => [
-            'type' => Model::TYPE_OBJECT,
-        ],
-        'protected' => [],
+        'id',
+        'id2',
+        'default',
+        'validate',
+        'validate2',
+        'unique',
+        'required',
+        'hidden',
+        'person_id',
+        'array',
+        'object',
+        'protected',
+    ];
+
+    protected static $casts = [
+        'id' => Model::TYPE_INTEGER,
+        'id2' => Model::TYPE_INTEGER,
+        'hidden' => Model::TYPE_BOOLEAN,
+        'person_id' => Model::TYPE_INTEGER,
+        'array' => Model::TYPE_ARRAY,
+        'object' => Model::TYPE_OBJECT,
     ];
 
     protected static $autoTimestamps;
@@ -190,11 +189,13 @@ class TestModelNoPermission extends ACLModel
 class Person extends ACLModel
 {
     protected static $properties = [
-        'id' => [
-            'type' => Model::TYPE_STRING,
-        ],
-        'name' => [],
-        'email' => [],
+        'id',
+        'name',
+        'email',
+    ];
+
+    protected static $casts = [
+        'id' => Model::TYPE_STRING,
     ];
 
     public function __construct(array $values = [])
@@ -218,7 +219,7 @@ class Group extends Model
 class IteratorTestModel extends Model
 {
     protected static $properties = [
-        'name' => [],
+        'name',
     ];
 }
 
@@ -248,7 +249,7 @@ class CacheableModel extends Model
     use Cacheable;
 
     protected static $properties = [
-        'answer' => [],
+        'answer',
     ];
 
     public static $cacheTTL = 10;
