@@ -74,9 +74,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'relation' => [
                 'type' => Model::TYPE_INTEGER,
             ],
-            'answer' => [
-                'type' => Model::TYPE_STRING,
-            ],
+            'answer' => [],
             'test_hook' => [],
             'mutator' => [],
             'accessor' => [],
@@ -121,9 +119,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'validate' => [],
             'validate2' => [],
             'unique' => [],
-            'required' => [
-                'type' => Model::TYPE_INTEGER,
-            ],
+            'required' => [],
             'hidden' => [
                 'type' => Model::TYPE_BOOLEAN,
             ],
@@ -220,7 +216,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, '{"test":true}'));
         $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, $expected));
 
-        $this->assertEquals('string', TestModel::cast('unknown_type', 'string'));
+        $this->assertEquals('string', TestModel::cast(null, 'string'));
     }
 
     /////////////////////////////

@@ -623,6 +623,12 @@ abstract class Model implements \ArrayAccess
             throw new BadMethodCallException("Cannot set the `$name` property because it is a relationship");
         }
 
+        // cast the value
+        $type = array_value(static::$properties, "$name.type");
+        if ($type) {
+            $value = self::cast($type, $value);
+        }
+
         // set using any mutators
         if ($mutator = self::getMutator($name)) {
             $this->_unsaved[$name] = $this->$mutator($value);

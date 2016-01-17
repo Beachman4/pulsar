@@ -19,9 +19,7 @@ class TestModel extends Model
         'relation' => [
             'type' => Model::TYPE_INTEGER,
         ],
-        'answer' => [
-            'type' => Model::TYPE_STRING,
-        ],
+        'answer' => [],
         'mutator' => [],
         'accessor' => [],
         'test_model2_id' => [],
@@ -101,9 +99,7 @@ class TestModel2 extends Model
         'validate' => [],
         'validate2' => [],
         'unique' => [],
-        'required' => [
-            'type' => Model::TYPE_INTEGER,
-        ],
+        'required' => [],
         'hidden' => [
             'type' => Model::TYPE_BOOLEAN,
         ],
@@ -197,12 +193,8 @@ class Person extends ACLModel
         'id' => [
             'type' => Model::TYPE_STRING,
         ],
-        'name' => [
-            'type' => Model::TYPE_STRING,
-        ],
-        'email' => [
-            'type' => Model::TYPE_STRING,
-        ],
+        'name' => [],
+        'email' => [],
     ];
 
     public function __construct(array $values = [])
