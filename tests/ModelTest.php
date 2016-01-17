@@ -70,28 +70,17 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected = [
             'id' => [
                 'type' => Model::TYPE_INTEGER,
-                'mutable' => Model::IMMUTABLE,
             ],
             'relation' => [
                 'type' => Model::TYPE_INTEGER,
-                'mutable' => Model::MUTABLE,
             ],
             'answer' => [
                 'type' => Model::TYPE_STRING,
-                'mutable' => Model::MUTABLE,
             ],
-            'test_hook' => [
-                'mutable' => Model::MUTABLE,
-            ],
-            'mutator' => [
-                'mutable' => Model::MUTABLE,
-            ],
-            'accessor' => [
-                'mutable' => Model::MUTABLE,
-            ],
-            'test_model2_id' => [
-                'mutable' => Model::MUTABLE,
-            ],
+            'test_hook' => [],
+            'mutator' => [],
+            'accessor' => [],
+            'test_model2_id' => [],
         ];
 
         $this->assertEquals($expected, TestModel::getProperties());
@@ -101,7 +90,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $expected = [
             'type' => Model::TYPE_STRING,
-            'mutable' => Model::MUTABLE,
         ];
 
         $this->assertEquals($expected, Person::getProperty('id'));
@@ -111,13 +99,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $expected = [
             'type' => Model::TYPE_INTEGER,
-            'mutable' => Model::IMMUTABLE,
         ];
         $this->assertEquals($expected, TestModel::getProperty('id'));
 
         $expected = [
             'type' => Model::TYPE_INTEGER,
-            'mutable' => Model::MUTABLE,
         ];
         $this->assertEquals($expected, TestModel::getProperty('relation'));
     }
@@ -127,54 +113,35 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $expected = [
             'id' => [
                 'type' => Model::TYPE_INTEGER,
-                'mutable' => Model::MUTABLE,
             ],
             'id2' => [
                 'type' => Model::TYPE_INTEGER,
-                'mutable' => Model::MUTABLE,
             ],
-            'default' => [
-                'mutable' => Model::MUTABLE,
-            ],
-            'validate' => [
-                'mutable' => Model::MUTABLE,
-            ],
-            'validate2' => [
-                'mutable' => Model::MUTABLE,
-            ],
-            'unique' => [
-                'mutable' => Model::MUTABLE,
-            ],
+            'default' => [],
+            'validate' => [],
+            'validate2' => [],
+            'unique' => [],
             'required' => [
                 'type' => Model::TYPE_INTEGER,
-                'mutable' => Model::MUTABLE,
             ],
             'hidden' => [
                 'type' => Model::TYPE_BOOLEAN,
-                'mutable' => Model::MUTABLE,
             ],
             'person_id' => [
                 'type' => Model::TYPE_INTEGER,
-                'mutable' => Model::MUTABLE,
             ],
             'array' => [
                 'type' => Model::TYPE_ARRAY,
-                'mutable' => Model::MUTABLE,
             ],
             'object' => [
                 'type' => Model::TYPE_OBJECT,
-                'mutable' => Model::MUTABLE,
             ],
-            'mutable_create_only' => [
-                'mutable' => Model::MUTABLE_CREATE_ONLY,
-            ],
+            'protected' => [],
             'created_at' => [
                 'type' => Model::TYPE_DATE,
-                'mutable' => Model::MUTABLE,
             ],
             'updated_at' => [
                 'type' => Model::TYPE_DATE,
-                'mutable' => Model::MUTABLE,
             ],
         ];
 
@@ -455,10 +422,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $params = [
             'relation' => '',
             'answer' => 42,
-            'extra' => true,
             'mutator' => 'blah',
-            'array' => [],
-            'object' => new stdClass(),
         ];
 
         $this->assertTrue($newModel->create($params));
@@ -467,7 +431,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(42, $newModel->answer);
     }
 
-    public function testCreateWithSave()
+    public function testCreateFromSave()
     {
         $newModel = new TestModel();
 
@@ -530,7 +494,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     'id2' => 2,
                     'required' => true,
                     'validate' => 'shouldtrimws@example.com',
-                    'mutable_create_only' => 'test',
                     'default' => 'some default value',
                     'hidden' => false,
                     'array' => [
@@ -551,14 +514,25 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'id2' => 2,
             'required' => 'on',
             'validate' => '  SHOULDTRIMWS@EXAMPLE.COM ',
-            'mutable_create_only' => 'test',
             'object' => $object,
         ];
 
         $this->assertTrue($newModel->create($input));
     }
 
-    public function testCreateImmutableId()
+    public function testCreateMassAssignmentFail()
+    {
+        $this->setExpectedException('Pulsar\Exception\MassAssignmentException');
+
+        $input = [
+            'array' => 'test',
+        ];
+
+        $newModel = new TestModel();
+        $newModel->create($input);
+    }
+
+    public function testCreateWithAssignedId()
     {
         $newModel = new TestModel();
 
@@ -567,17 +541,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('createModel')
                ->andReturn(true);
 
-        $driver->shouldReceive('getCreatedID')
-               ->andReturn(1);
-
         Model::setDriver($driver);
 
         $newModel->id = 100;
         $this->assertTrue($newModel->create());
-        $this->assertNotEquals(100, $newModel->id());
+        $this->assertEquals(100, $newModel->id());
     }
 
-    public function testCreateWithId()
+    public function testCreateFailWithId()
     {
         $this->setExpectedException('BadMethodCallException');
 
@@ -721,6 +692,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setDriver($driver);
 
         $model->answer = 42;
+        $model->extra = true;
         $this->assertTrue($model->save());
     }
 
@@ -742,28 +714,20 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'answer' => ['hello', 'hello'],
             'relation' => '',
             'mutator' => 'blah',
-            'nonexistent_property' => 'whatever',
         ]));
     }
 
-    public function testSetImmutableProperties()
+    public function testSetMassAssignmentFail()
     {
-        $model = new TestModel();
-        $model->refreshWith(['id' => 10]);
+        $this->setExpectedException('Pulsar\Exception\MassAssignmentException');
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $input = [
+            'protected' => 'test',
+        ];
 
-        $driver->shouldReceive('updateModel')
-               ->withArgs([$model, []])
-               ->andReturn(true)
-               ->once();
-
-        Model::setDriver($driver);
-
-        $model->id = 432;
-        $model->mutable_create_only = 'blah';
-
-        $this->assertTrue($model->set());
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 11]);
+        $model->set($input);
     }
 
     public function testSetFail()

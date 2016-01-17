@@ -16,6 +16,7 @@ use Infuse\Locale;
 use InvalidArgumentException;
 use Pulsar\Driver\DriverInterface;
 use Pulsar\Exception\DriverMissingException;
+use Pulsar\Exception\MassAssignmentException;
 use Pulsar\Exception\NotFoundException;
 use Pulsar\Relation\HasOne;
 use Pulsar\Relation\BelongsTo;
@@ -26,10 +27,6 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class Model implements \ArrayAccess
 {
-    const IMMUTABLE = 0;
-    const MUTABLE_CREATE_ONLY = 1;
-    const MUTABLE = 2;
-
     const TYPE_STRING = 'string';
     const TYPE_INTEGER = 'integer';
     const TYPE_FLOAT = 'float';
@@ -116,16 +113,8 @@ abstract class Model implements \ArrayAccess
     /**
      * @staticvar array
      */
-    private static $propertyDefinitionBase = [
-        'mutable' => self::MUTABLE,
-    ];
-
-    /**
-     * @staticvar array
-     */
     private static $defaultIDProperty = [
         'type' => self::TYPE_INTEGER,
-        'mutable' => self::IMMUTABLE,
     ];
 
     /**
@@ -217,12 +206,6 @@ abstract class Model implements \ArrayAccess
             static::$properties = array_replace(self::$timestampProperties, static::$properties);
 
             static::$validations = array_replace(self::$timestampValidations, static::$validations);
-        }
-
-        // fill in each property by extending the property
-        // definition base
-        foreach (static::$properties as &$property) {
-            $property = array_replace(self::$propertyDefinitionBase, $property);
         }
 
         // order the properties array by name for consistency
@@ -631,6 +614,8 @@ abstract class Model implements \ArrayAccess
      * @param mixed  $value
      *
      * @throws BadMethodCallException when setting a relationship
+     *
+     * @return self
      */
     public function setValue($name, $value)
     {
@@ -643,6 +628,36 @@ abstract class Model implements \ArrayAccess
             $this->_unsaved[$name] = $this->$mutator($value);
         } else {
             $this->_unsaved[$name] = $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Sets a collection values on the model from an untrusted input.
+     *
+     * @param array $values
+     *
+     * @throws MassAssignmentException when assigning a value that is protected or not whitelisted
+     *
+     * @return self
+     */
+    public function setValues($values)
+    {
+        // check if the model has a mass assignment whitelist
+        $permitted = (property_exists($this, 'permitted')) ? static::$permitted : false;
+
+        // if no whitelist, then check for a blacklist
+        $protected = (!is_array($permitted) && property_exists($this, 'protected')) ? static::$protected : false;
+
+        foreach ($values as $k => $value) {
+            // check for mass assignment violations
+            if (($permitted && !in_array($k, $permitted)) ||
+                ($protected && in_array($k, $protected))) {
+                throw new MassAssignmentException("Mass assignment of $k on ".static::modelName().' is not allowed');
+            }
+
+            $this->setValue($k, $value);
         }
 
         return $this;
@@ -698,7 +713,7 @@ abstract class Model implements \ArrayAccess
             } elseif (static::isRelationship($k)) {
                 $result[$k] = $this->loadRelationship($k);
             // set any missing values to null
-            } elseif ($property = static::getProperty($k)) {
+            } elseif (static::hasProperty($k)) {
                 $result[$k] = $this->_values[$k] = null;
             // throw an exception for non-properties that do not
             // have an accessor
@@ -764,7 +779,7 @@ abstract class Model implements \ArrayAccess
             return $this->create();
         }
 
-        return $this->set($this->_unsaved);
+        return $this->set();
     }
 
     /**
@@ -782,11 +797,8 @@ abstract class Model implements \ArrayAccess
             throw new BadMethodCallException('Cannot call create() on an existing model');
         }
 
-        if (!empty($data)) {
-            foreach ($data as $k => $value) {
-                $this->setValue($k, $value);
-            }
-        }
+        // mass assign values passed into create()
+        $this->setValues($data);
 
         // add in any preset values
         $this->_unsaved = array_replace($this->_values, $this->_unsaved);
@@ -805,9 +817,9 @@ abstract class Model implements \ArrayAccess
         // build the insert array
         $insertValues = [];
         foreach ($this->_unsaved as $k => $value) {
-            // remove any non-existent or immutable properties
+            // remove any non-existent properties
             $property = static::getProperty($k);
-            if ($property === null || $property['mutable'] == self::IMMUTABLE) {
+            if ($property === null) {
                 continue;
             }
 
@@ -839,10 +851,11 @@ abstract class Model implements \ArrayAccess
     {
         $ids = [];
         foreach (static::$ids as $k) {
-            // attempt use the supplied value if the ID property is mutable
+            // check if the ID property was already given,
             $property = static::getProperty($k);
-            if (in_array($property['mutable'], [self::MUTABLE, self::MUTABLE_CREATE_ONLY]) && isset($this->_unsaved[$k])) {
+            if (isset($this->_unsaved[$k])) {
                 $ids[$k] = $this->_unsaved[$k];
+            // otherwise, get it from the data layer (i.e. auto-incrementing IDs)
             } else {
                 $ids[$k] = self::getDriver()->getCreatedID($this, $k);
             }
@@ -866,11 +879,8 @@ abstract class Model implements \ArrayAccess
             throw new BadMethodCallException('Can only call set() on an existing model');
         }
 
-        if (!empty($data)) {
-            foreach ($data as $k => $value) {
-                $this->setValue($k, $value);
-            }
-        }
+        // mass assign values passed into set()
+        $this->setValues($data);
 
         // not updating anything?
         if (count($this->_unsaved) === 0) {
@@ -891,9 +901,9 @@ abstract class Model implements \ArrayAccess
         // build the update array
         $updateValues = [];
         foreach ($this->_unsaved as $k => $value) {
-            // remove any non-existent or immutable properties
+            // remove any non-existent properties
             $property = static::getProperty($k);
-            if ($property === null || $property['mutable'] != self::MUTABLE) {
+            if ($property === null) {
                 continue;
             }
 

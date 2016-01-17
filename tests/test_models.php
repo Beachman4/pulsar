@@ -38,6 +38,8 @@ class TestModel extends Model
     ];
     protected static $appended = ['appended'];
 
+    protected static $permitted = ['relation', 'answer', 'mutator', 'accessor', 'test_model2_id'];
+
     public static $query;
 
     protected function initialize()
@@ -114,9 +116,7 @@ class TestModel2 extends Model
         'object' => [
             'type' => Model::TYPE_OBJECT,
         ],
-        'mutable_create_only' => [
-            'mutable' => Model::MUTABLE_CREATE_ONLY,
-        ],
+        'protected' => [],
     ];
 
     protected static $autoTimestamps;
@@ -136,9 +136,11 @@ class TestModel2 extends Model
         'person_id',
         'array',
         'object',
-        'mutable_create_only',
+        'protected',
     ];
     protected static $appended = ['person'];
+
+    protected static $protected = ['protected'];
 
     public static $query;
 
