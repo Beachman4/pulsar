@@ -49,15 +49,6 @@ abstract class Model implements \ArrayAccess
     protected static $ids = [self::DEFAULT_ID_PROPERTY];
 
     /**
-     * Property definitions expressed as a key-value map with
-     * property names as the keys.
-     * i.e. ['enabled' => ['type' => Model::TYPE_BOOLEAN]].
-     *
-     * @staticvar array
-     */
-    protected static $properties = [];
-
-    /**
      * Validation rules expressed as a key-value map with
      * property names as the keys.
      * i.e. ['name' => 'string:2'].
@@ -194,8 +185,6 @@ abstract class Model implements \ArrayAccess
     {
         // add in the default ID property
         if (static::$ids == [self::DEFAULT_ID_PROPERTY]) {
-            static::$properties[] = self::DEFAULT_ID_PROPERTY;
-
             if (property_exists($this, 'casts')) {
                 static::$casts = array_replace(self::$defaultIDProperty, static::$casts);
             }
@@ -203,19 +192,12 @@ abstract class Model implements \ArrayAccess
 
         // add in the auto timestamp properties
         if (property_exists($this, 'autoTimestamps')) {
-            static::$properties[] = 'created_at';
-            static::$properties[] = 'updated_at';
-
             if (property_exists($this, 'casts')) {
                 static::$casts = array_replace(self::$timestampProperties, static::$casts);
             }
 
             static::$validations = array_replace(self::$timestampValidations, static::$validations);
         }
-
-        // order the properties array by name for consistency
-        // since it is constructed in a random order
-        sort(static::$properties);
     }
 
     /**
@@ -349,7 +331,7 @@ abstract class Model implements \ArrayAccess
 
     public function __isset($name)
     {
-        return array_key_exists($name, $this->_unsaved) || static::hasProperty($name);
+        return array_key_exists($name, $this->_unsaved) || $this->hasProperty($name);
     }
 
     public function __unset($name)
@@ -431,23 +413,11 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Checks if the model has a property.
-     *
-     * @param string $property property
-     *
-     * @return bool has property
-     */
-    public static function hasProperty($property)
-    {
-        return in_array($property, static::$properties);
-    }
-
-    /**
      * Gets the mutator method name for a given proeprty name.
      * Looks for methods in the form of `setPropertyValue`.
      * i.e. the mutator for `last_name` would be `setLastNameValue`.
      *
-     * @param string $property property
+     * @param string $property
      *
      * @return string|false method name if it exists
      */
@@ -475,7 +445,7 @@ abstract class Model implements \ArrayAccess
      * Looks for methods in the form of `getPropertyValue`.
      * i.e. the accessor for `last_name` would be `getLastNameValue`.
      *
-     * @param string $property property
+     * @param string $property
      *
      * @return string|false method name if it exists
      */
@@ -533,14 +503,14 @@ abstract class Model implements \ArrayAccess
     /**
      * Gets the type cast for a property.
      *
-     * @param string $name
+     * @param string $property
      *
      * @return string|null
      */
-    public static function getPropertyType($name)
+    public static function getPropertyType($property)
     {
         if (property_exists(get_called_class(), 'casts')) {
-            return array_value(static::$casts, $name);
+            return array_value(static::$casts, $property);
         }
     }
 
@@ -598,6 +568,30 @@ abstract class Model implements \ArrayAccess
         default:
             return $value;
         }
+    }
+
+    /**
+     * Gets the properties of this model.
+     *
+     * @return array
+     */
+    public function getProperties()
+    {
+        return array_unique(array_merge(
+            static::$ids, array_keys($this->_values)));
+    }
+
+    /**
+     * Checks if the model has a property.
+     *
+     * @param string $property
+     *
+     * @return bool has property
+     */
+    public function hasProperty($property)
+    {
+        return array_key_exists($property, $this->_values) ||
+               in_array($property, static::$ids);
     }
 
     /////////////////////////////
@@ -715,7 +709,7 @@ abstract class Model implements \ArrayAccess
             } elseif (static::isRelationship($k)) {
                 $result[$k] = $this->loadRelationship($k);
             // set any missing values to null
-            } elseif (static::hasProperty($k)) {
+            } elseif ($this->hasProperty($k)) {
                 $result[$k] = $this->_values[$k] = null;
             // throw an exception for non-properties that do not
             // have an accessor
@@ -743,13 +737,17 @@ abstract class Model implements \ArrayAccess
     public function toArray()
     {
         // build the list of properties to retrieve
-        // remove any hidden properties
-        $hide = (property_exists($this, 'hidden')) ? static::$hidden : [];
-        $properties = array_diff(static::$properties, $hide);
+        $properties = $this->getProperties();
 
-        // add any appended properties
-        $append = (property_exists($this, 'appended')) ? static::$appended : [];
-        $properties = array_merge($properties, $append);
+        // remove any hidden properties
+        if (property_exists($this, 'hidden')) {
+            $properties = array_diff($properties, static::$hidden);
+        }
+
+        // include any appended properties
+        if (property_exists($this, 'appended')) {
+            $properties = array_unique(array_merge($properties, static::$appended));
+        }
 
         // get the values for the properties
         $result = $this->get($properties);
@@ -814,24 +812,14 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // build the insert array
-        $insertValues = [];
-        foreach ($this->_unsaved as $k => $value) {
-            // remove any non-existent properties
-            if (!static::hasProperty($k)) {
-                continue;
-            }
-
-            $insertValues[$k] = $value;
-        }
-
-        if (!self::getDriver()->createModel($this, $insertValues)) {
+        // create the model using the driver
+        if (!self::getDriver()->createModel($this, $this->_unsaved)) {
             return false;
         }
 
         // update the model with the persisted values and new ID(s)
         $newValues = array_replace(
-            $insertValues,
+            $this->_unsaved,
             $this->getNewIds());
         $this->refreshWith($newValues);
 
@@ -896,23 +884,13 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // build the update array
-        $updateValues = [];
-        foreach ($this->_unsaved as $k => $value) {
-            // remove any non-existent properties
-            if (!static::hasProperty($k)) {
-                continue;
-            }
-
-            $updateValues[$k] = $value;
-        }
-
-        if (!self::getDriver()->updateModel($this, $updateValues)) {
+        // update the model using the driver
+        if (!self::getDriver()->updateModel($this, $this->_unsaved)) {
             return false;
         }
 
         // update the model with the persisted values
-        $this->refreshWith($updateValues);
+        $this->refreshWith($this->_unsaved);
 
         // dispatch the model.updated event
         $event = $this->dispatch(ModelEvent::UPDATED);
@@ -1343,7 +1321,7 @@ abstract class Model implements \ArrayAccess
 
         // run the validator against the model values
         $validator = $this->getValidator();
-        $values = $this->_values + $this->_unsaved;
+        $values = $this->_unsaved + $this->_values;
         $validated = $validator->validate($values);
 
         // add back any modified unsaved values

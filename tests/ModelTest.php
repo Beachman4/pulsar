@@ -254,15 +254,43 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('some default value', $model->default);
     }
 
+    public function testGetProperties()
+    {
+        $newModel = new TestModel();
+        $this->assertEquals(['id'], $newModel->getProperties());
+
+        $newModel = new TestModel2();
+        $this->assertEquals(['id', 'id2', 'default', 'hidden', 'person_id', 'array'], $newModel->getProperties());
+
+        $model = new TestModel(['property' => true]);
+        $this->assertEquals(['id', 'property'], $model->getProperties());
+    }
+
+    public function testHasProperty()
+    {
+        $newModel = new TestModel();
+        $this->assertTrue($newModel->hasProperty('id'));
+
+        $model = new TestModel(['property' => true]);
+        $this->assertTrue($model->hasProperty('property'));
+    }
+
     public function testToArray()
     {
-        $model = new TestModel(['id' => 5]);
+        $model = new TestModel([
+            'id' => 5,
+            'relation' => 100,
+            'answer' => 42,
+            // hidden
+            'mutator' => 'blah',
+            'accessor' => 'blah',
+            'test_model2_id' => 123,
+        ]);
 
         $expected = [
             'id' => 5,
-            'relation' => null,
-            'answer' => null,
-            'test_hook' => null,
+            'relation' => 100,
+            'answer' => 42,
             'appended' => true,
         ];
 
@@ -271,7 +299,18 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testToArrayWithRelationship()
     {
-        $model = new TestModel2(['id' => 1, 'id2' => 2, 'person_id' => 3]);
+        $model = new TestModel2([
+            'id' => 1,
+            'id2' => 2,
+            'person_id' => 3,
+            'validate' => null,
+            'unique' => null,
+            'required' => null,
+            'created_at' => 4,
+            'updated_at' => 5,
+            // hidden
+            'validate2' => null,
+        ]);
 
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
         $driver->shouldReceive('queryModels')
@@ -286,8 +325,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'validate' => null,
             'unique' => null,
             'required' => null,
-            'created_at' => null,
-            'updated_at' => null,
+            'created_at' => 4,
+            'updated_at' => 5,
             'person' => [
                 'id' => 3,
                 'name' => 'Bob',
@@ -332,7 +371,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('createModel')
                ->withArgs([$newModel, [
                     'mutator' => 'BLAH',
-                    'relation' => null,
+                    'relation' => 0,
                     'answer' => 42,
                 ]])
                ->andReturn(true)
@@ -365,8 +404,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver->shouldReceive('createModel')
                ->withArgs([$newModel, [
                     'mutator' => 'BLAH',
-                    'relation' => null,
+                    'relation' => 0,
                     'answer' => 42,
+                    'extra' => true,
+                    'array' => [],
+                    'object' => new stdClass(),
                 ]])
                ->andReturn(true)
                ->once();
@@ -611,7 +653,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
         $driver->shouldReceive('updateModel')
-               ->withArgs([$model, ['answer' => 42]])
+               ->withArgs([$model, [
+                    'answer' => 42,
+                    'extra' => true, ]])
                ->andReturn(true);
 
         Model::setDriver($driver);
@@ -629,7 +673,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
 
         $driver->shouldReceive('updateModel')
-               ->withArgs([$model, ['answer' => 'hello', 'mutator' => 'BLAH', 'relation' => null]])
+               ->withArgs([$model, ['answer' => 'hello', 'mutator' => 'BLAH', 'relation' => 0]])
                ->andReturn(true)
                ->once();
 
@@ -726,7 +770,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setDriver($driver);
 
         $model = new TestModel2();
-        $model->refreshWith(['id' => 12]);
+        $model->refreshWith(['id' => 12, 'unique' => 'different']);
         $model->unique = 'works';
         $model->required = 'required';
         $this->assertTrue($model->set());
@@ -979,7 +1023,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testBelongsTo()
     {
-        $model = new TestModel();
+        $model = new TestModel(['test_model2_id' => 1]);
 
         $relation = $model->belongsTo('TestModel2');
 
@@ -1005,7 +1049,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testBelongsToMany()
     {
-        $model = new TestModel();
+        $model = new TestModel(['test_model2_id' => 1]);
 
         $relation = $model->belongsToMany('TestModel2');
 

@@ -15,14 +15,6 @@ use Pulsar\Query;
 
 class TestModel extends Model
 {
-    protected static $properties = [
-        'relation',
-        'answer',
-        'mutator',
-        'accessor',
-        'test_model2_id',
-    ];
-
     protected static $casts = [
         'relation' => Model::TYPE_INTEGER,
     ];
@@ -41,13 +33,6 @@ class TestModel extends Model
     protected static $permitted = ['relation', 'answer', 'mutator', 'accessor', 'test_model2_id'];
 
     public static $query;
-
-    protected function initialize()
-    {
-        self::$properties[] = 'test_hook';
-
-        parent::initialize();
-    }
 
     public static function query()
     {
@@ -89,21 +74,6 @@ function validate()
 class TestModel2 extends Model
 {
     protected static $ids = ['id', 'id2'];
-
-    protected static $properties = [
-        'id',
-        'id2',
-        'default',
-        'validate',
-        'validate2',
-        'unique',
-        'required',
-        'hidden',
-        'person_id',
-        'array',
-        'object',
-        'protected',
-    ];
 
     protected static $casts = [
         'id' => Model::TYPE_INTEGER,
@@ -188,12 +158,6 @@ class TestModelNoPermission extends ACLModel
 
 class Person extends ACLModel
 {
-    protected static $properties = [
-        'id',
-        'name',
-        'email',
-    ];
-
     protected static $casts = [
         'id' => Model::TYPE_STRING,
     ];
@@ -218,9 +182,6 @@ class Group extends Model
 
 class IteratorTestModel extends Model
 {
-    protected static $properties = [
-        'name',
-    ];
 }
 
 class AclObject extends ACLModel
@@ -247,10 +208,6 @@ class AclObject extends ACLModel
 class CacheableModel extends Model
 {
     use Cacheable;
-
-    protected static $properties = [
-        'answer',
-    ];
 
     public static $cacheTTL = 10;
 }
