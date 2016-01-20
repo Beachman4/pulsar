@@ -23,14 +23,14 @@ class TestModel extends Model
         'answer' => 'matching',
     ];
 
+    protected static $permitted = ['relation', 'answer', 'mutator', 'accessor', 'test_model2_id'];
+
     protected static $hidden = [
         'mutator',
         'accessor',
         'test_model2_id',
     ];
     protected static $appended = ['appended'];
-
-    protected static $permitted = ['relation', 'answer', 'mutator', 'accessor', 'test_model2_id'];
 
     public static $query;
 
@@ -93,7 +93,7 @@ class TestModel2 extends Model
         'unique' => 'unique',
     ];
 
-    protected static $relationships = ['person'];
+    protected static $protected = ['protected'];
 
     protected static $hidden = [
         'validate2',
@@ -105,7 +105,7 @@ class TestModel2 extends Model
     ];
     protected static $appended = ['person'];
 
-    protected static $protected = ['protected'];
+    protected static $relationships = ['person'];
 
     public static $query;
 

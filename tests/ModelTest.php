@@ -446,6 +446,24 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('1,2', $newModel->id());
     }
 
+    public function testCreateAutoTimestamps()
+    {
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $driver->shouldReceive('createModel')
+               ->andReturn(true);
+
+        Model::setDriver($driver);
+
+        $newModel = new TestModel2();
+        $newModel->id = 1;
+        $newModel->id2 = 2;
+        $newModel->required = 25;
+        $this->assertTrue($newModel->create());
+        $this->assertEquals(time(), $newModel->created_at);
+        $this->assertEquals(time(), $newModel->updated_at);
+    }
+
     public function testCreateMassAssignment()
     {
         $newModel = new TestModel2();
@@ -470,6 +488,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     ],
                     'object' => $object,
                     'person_id' => 20,
+                    'created_at' => time(),
+                    'updated_at' => time(),
                  ]])
                ->andReturn(true)
                ->once();
@@ -663,6 +683,23 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->answer = 42;
         $model->extra = true;
         $this->assertTrue($model->save());
+    }
+
+    public function testSetAutoTimestamps()
+    {
+        $model = new TestModel2();
+        $model->refreshWith(['id' => 10]);
+
+        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+
+        $driver->shouldReceive('updateModel')
+               ->andReturn(true);
+
+        Model::setDriver($driver);
+
+        $model->required = true;
+        $this->assertTrue($model->set());
+        $this->assertEquals(time(), $model->updated_at);
     }
 
     public function testSetMassAssignment()

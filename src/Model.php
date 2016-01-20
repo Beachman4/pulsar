@@ -104,29 +104,6 @@ abstract class Model implements \ArrayAccess
     /**
      * @staticvar array
      */
-    private static $defaultIDProperty = [
-        self::DEFAULT_ID_PROPERTY => self::TYPE_INTEGER,
-    ];
-
-    /**
-     * @staticvar array
-     */
-    private static $timestampProperties = [
-        'created_at' => self::TYPE_DATE,
-        'updated_at' => self::TYPE_DATE,
-    ];
-
-    /**
-     * @staticvar array
-     */
-    private static $timestampValidations = [
-        'created_at' => 'timestamp|db_timestamp',
-        'updated_at' => 'timestamp|db_timestamp',
-    ];
-
-    /**
-     * @staticvar array
-     */
     private static $initialized = [];
 
     /**
@@ -185,19 +162,33 @@ abstract class Model implements \ArrayAccess
     {
         // add in the default ID property
         if (static::$ids == [self::DEFAULT_ID_PROPERTY]) {
-            if (property_exists($this, 'casts')) {
-                static::$casts = array_replace(self::$defaultIDProperty, static::$casts);
+            if (property_exists($this, 'casts') && !isset(static::$casts[self::DEFAULT_ID_PROPERTY])) {
+                static::$casts[self::DEFAULT_ID_PROPERTY] = self::TYPE_INTEGER;
             }
         }
 
-        // add in the auto timestamp properties
+        // generates created_at and updated_at timestamps
         if (property_exists($this, 'autoTimestamps')) {
-            if (property_exists($this, 'casts')) {
-                static::$casts = array_replace(self::$timestampProperties, static::$casts);
-            }
-
-            static::$validations = array_replace(self::$timestampValidations, static::$validations);
+            $this->installAutoTimestamps();
         }
+    }
+
+    private function installAutoTimestamps()
+    {
+        if (property_exists($this, 'casts')) {
+            static::$casts['created_at'] = self::TYPE_DATE;
+            static::$casts['updated_at'] = self::TYPE_DATE;
+        }
+
+        self::creating(function (ModelEvent $event) {
+            $model = $event->getModel();
+            $model->created_at = time();
+            $model->updated_at = time();
+        });
+
+        self::updating(function (ModelEvent $event) {
+            $event->getModel()->updated_at = time();
+        });
     }
 
     /**
