@@ -10,6 +10,7 @@
  */
 namespace Pulsar\Driver;
 
+use Carbon\Carbon;
 use ICanBoogie\Inflector;
 use Pulsar\Exception\DriverException;
 use Pulsar\Model;
@@ -172,6 +173,11 @@ class DatabaseDriver implements DriverInterface
      */
     public function serializeValue($value)
     {
+        // convert dates back to their numeric representation
+        if ($value instanceof Carbon) {
+            return $value->timestamp;
+        }
+
         // encode arrays/objects as JSON
         if (is_array($value) || is_object($value)) {
             return json_encode($value);

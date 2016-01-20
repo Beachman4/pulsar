@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Carbon\Carbon;
 use Infuse\Locale;
 use Pulsar\Model;
 use Pulsar\ModelEvent;
@@ -24,6 +25,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         Model::clearDriver();
         Model::clearLocale();
+
+        date_default_timezone_set('UTC');
     }
 
     public function testInjectContainer()
@@ -133,9 +136,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, '1'));
         $this->assertFalse(TestModel::cast(Model::TYPE_BOOLEAN, false));
 
-        $this->assertEquals(123, TestModel::cast(Model::TYPE_DATE, 123));
-        $this->assertEquals(123, TestModel::cast(Model::TYPE_DATE, '123'));
-        $this->assertEquals(mktime(0, 0, 0, 8, 20, 2015), TestModel::cast(Model::TYPE_DATE, 'Aug-20-2015'));
+        $date = TestModel::cast(Model::TYPE_DATE, 123);
+        $this->assertInstanceOf('Carbon\Carbon', $date);
+        $this->assertEquals(123, $date->timestamp);
+
+        $date = new Carbon();
+        $this->assertEquals($date, TestModel::cast(Model::TYPE_DATE, $date));
 
         $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, '{"test":true}'));
         $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, ['test' => true]));
@@ -460,8 +466,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $newModel->id2 = 2;
         $newModel->required = 25;
         $this->assertTrue($newModel->create());
-        $this->assertEquals(time(), $newModel->created_at);
-        $this->assertEquals(time(), $newModel->updated_at);
+        $this->assertEquals(time(), $newModel->created_at->timestamp);
+        $this->assertEquals(time(), $newModel->updated_at->timestamp);
     }
 
     public function testCreateMassAssignment()
@@ -488,8 +494,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
                     ],
                     'object' => $object,
                     'person_id' => 20,
-                    'created_at' => time(),
-                    'updated_at' => time(),
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
                  ]])
                ->andReturn(true)
                ->once();
@@ -699,7 +705,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model->required = true;
         $this->assertTrue($model->set());
-        $this->assertEquals(time(), $model->updated_at);
+        $this->assertEquals(time(), $model->updated_at->timestamp);
     }
 
     public function testSetMassAssignment()

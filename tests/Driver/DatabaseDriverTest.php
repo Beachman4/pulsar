@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Carbon\Carbon;
 use Pulsar\Driver\DatabaseDriver;
 use Pulsar\Query;
 use Pimple\Container;
@@ -43,6 +44,8 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $obj = new stdClass();
         $obj->test = true;
         $this->assertEquals('{"test":true}', $driver->serializeValue($obj));
+
+        $this->assertEquals(time(), $driver->serializeValue(Carbon::now()));
     }
 
     public function testCreateModel()

@@ -11,6 +11,7 @@
 namespace Pulsar;
 
 use BadMethodCallException;
+use Carbon\Carbon;
 use ICanBoogie\Inflector;
 use Infuse\Locale;
 use InvalidArgumentException;
@@ -36,6 +37,8 @@ abstract class Model implements \ArrayAccess
     const TYPE_ARRAY = 'array';
 
     const DEFAULT_ID_PROPERTY = 'id';
+
+    const DEFAULT_DATE_FORMAT = 'U'; // unix timestamps
 
     /////////////////////////////
     // Model visible variables
@@ -182,12 +185,12 @@ abstract class Model implements \ArrayAccess
 
         self::creating(function (ModelEvent $event) {
             $model = $event->getModel();
-            $model->created_at = time();
-            $model->updated_at = time();
+            $model->created_at = Carbon::now();
+            $model->updated_at = Carbon::now();
         });
 
         self::updating(function (ModelEvent $event) {
-            $event->getModel()->updated_at = time();
+            $event->getModel()->updated_at = Carbon::now();
         });
     }
 
@@ -533,11 +536,13 @@ abstract class Model implements \ArrayAccess
             return filter_var($value, FILTER_VALIDATE_BOOLEAN);
 
         case self::TYPE_DATE:
-            // cast dates as unix timestamps
-            if (!is_numeric($value)) {
-                return strtotime($value);
+            // cast dates into Carbon objects
+            if ($value instanceof Carbon) {
+                return $value;
             } else {
-                return $value + 0;
+                $format = self::DEFAULT_DATE_FORMAT;
+
+                return Carbon::createFromFormat($format, $value);
             }
 
         case self::TYPE_ARRAY:
