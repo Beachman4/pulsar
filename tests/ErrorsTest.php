@@ -121,4 +121,35 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals([], self::$errors['invalid']);
     }
+
+    public function testDefaultMessages()
+    {
+        $messages = [
+            'pulsar.validation.alpha' => 'Property only allows letters',
+            'pulsar.validation.alpha_numeric' => 'Property only allows letters and numbers',
+            'pulsar.validation.alpha_dash' => 'Property only allows letters and dashes',
+            'pulsar.validation.boolean' => 'Property must be yes or no',
+            'pulsar.validation.custom' => 'Property validation failed',
+            'pulsar.validation.email' => 'Property must be a valid email address',
+            'pulsar.validation.enum' => 'Property must be one of the allowed values',
+            'pulsar.validation.date' => 'Property must be a date',
+            'pulsar.validation.ip' => 'Property only allows valid IP addresses',
+            'pulsar.validation.matching' => 'Property must match',
+            'pulsar.validation.numeric' => 'Property only allows numbers',
+            'pulsar.validation.password' => 'Property must meet the password requirements',
+            'pulsar.validation.range' => 'Property must be within the allowed range',
+            'pulsar.validation.required' => 'Property is missing',
+            'pulsar.validation.string' => 'Property must be a string of the proper length',
+            'pulsar.validation.time_zone' => 'Property only allows valid time zones',
+            'pulsar.validation.timestamp' => 'Property only allows timestamps',
+            'pulsar.validation.unique' => 'Property must be unique',
+            'pulsar.validation.url' => 'Property only allows valid URLs',
+        ];
+
+        foreach ($messages as $error => $message) {
+            self::$errors->clear();
+            self::$errors['property'] = $error;
+            $this->assertEquals([$message], self::$errors['property']);
+        }
+    }
 }

@@ -19,6 +19,31 @@ use Infuse\Locale;
 class Errors implements IteratorAggregate, Countable, ArrayAccess
 {
     /**
+     * @staticvar array
+     */
+    private static $messages = [
+        'pulsar.validation.alpha' => '{{property}} only allows letters',
+        'pulsar.validation.alpha_numeric' => '{{property}} only allows letters and numbers',
+        'pulsar.validation.alpha_dash' => '{{property}} only allows letters and dashes',
+        'pulsar.validation.boolean' => '{{property}} must be yes or no',
+        'pulsar.validation.custom' => '{{property}} validation failed',
+        'pulsar.validation.email' => '{{property}} must be a valid email address',
+        'pulsar.validation.enum' => '{{property}} must be one of the allowed values',
+        'pulsar.validation.date' => '{{property}} must be a date',
+        'pulsar.validation.ip' => '{{property}} only allows valid IP addresses',
+        'pulsar.validation.matching' => '{{property}} must match',
+        'pulsar.validation.numeric' => '{{property}} only allows numbers',
+        'pulsar.validation.password' => '{{property}} must meet the password requirements',
+        'pulsar.validation.range' => '{{property}} must be within the allowed range',
+        'pulsar.validation.required' => '{{property}} is missing',
+        'pulsar.validation.string' => '{{property}} must be a string of the proper length',
+        'pulsar.validation.time_zone' => '{{property}} only allows valid time zones',
+        'pulsar.validation.timestamp' => '{{property}} only allows timestamps',
+        'pulsar.validation.unique' => '{{property}} must be unique',
+        'pulsar.validation.url' => '{{property}} only allows valid URLs',
+    ];
+
+    /**
      * @var array
      */
     private $stack = [];
@@ -164,7 +189,10 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
             'property' => $model::getPropertyTitle($property),
         ];
 
-        return $this->locale->t($error, $parameters, $locale);
+        // try to supply a fallback message
+        $fallback = array_value(self::$messages, $error);
+
+        return $this->locale->t($error, $parameters, $locale, $fallback);
     }
 
     //////////////////////////
