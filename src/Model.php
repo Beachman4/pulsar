@@ -66,6 +66,11 @@ abstract class Model implements \ArrayAccess
     protected static $relationships = [];
 
     /**
+     * @staticvar array
+     */
+    protected static $dates = [];
+
+    /**
      * @staticvar \Pimple\Container
      */
     protected static $injectedApp;
@@ -475,6 +480,23 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Gets the string date format for a property. Defaults to
+     * UNIX timestamps.
+     *
+     * @param string $property
+     *
+     * @return string
+     */
+    public static function getDateFormat($property)
+    {
+        if (isset(static::$dates[$property])) {
+            return static::$dates[$property];
+        }
+
+        return self::DEFAULT_DATE_FORMAT;
+    }
+
+    /**
      * Gets the title of a property.
      *
      * @param string $name
@@ -513,10 +535,11 @@ abstract class Model implements \ArrayAccess
      *
      * @param string|null $type
      * @param mixed       $value
+     * @param string      $property optional property name
      *
      * @return mixed casted value
      */
-    public static function cast($type, $value)
+    public static function cast($type, $value, $property = null)
     {
         if ($value === null) {
             return;
@@ -540,7 +563,7 @@ abstract class Model implements \ArrayAccess
             if ($value instanceof Carbon) {
                 return $value;
             } else {
-                $format = self::DEFAULT_DATE_FORMAT;
+                $format = self::getDateFormat($property);
 
                 return Carbon::createFromFormat($format, $value);
             }
@@ -612,7 +635,7 @@ abstract class Model implements \ArrayAccess
 
         // cast the value
         if ($type = static::getPropertyType($name)) {
-            $value = static::cast($type, $value);
+            $value = static::cast($type, $value, $name);
         }
 
         // set using any mutators
@@ -974,7 +997,7 @@ abstract class Model implements \ArrayAccess
         if (property_exists($this, 'casts')) {
             foreach ($values as $k => &$value) {
                 if ($type = static::getPropertyType($k)) {
-                    $value = static::cast($type, $value);
+                    $value = static::cast($type, $value, $k);
                 }
             }
         }

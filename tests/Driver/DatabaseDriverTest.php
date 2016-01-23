@@ -46,6 +46,8 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('{"test":true}', $driver->serializeValue($obj));
 
         $this->assertEquals(time(), $driver->serializeValue(Carbon::now()));
+
+        $this->assertEquals('2016-01-20 00:00:00', $driver->serializeValue(Carbon::create(2016, 1, 20, 0, 0, 0), 'TestModel2', 'created_at'));
     }
 
     public function testCreateModel()

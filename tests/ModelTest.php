@@ -99,6 +99,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('getAccessorValue', TestModel::getAccessor('accessor'));
     }
 
+    public function testGetDateFormat()
+    {
+        $this->assertEquals('U', TestModel::getDateFormat('date'));
+        $this->assertEquals('Y-m-d H:i:s', TestModel2::getDateFormat('created_at'));
+        $this->assertEquals('U', TestModel2::getDateFormat('updated_at'));
+    }
+
     public function testGetPropertyTitle()
     {
         $this->assertEquals('Answer', TestModel::getPropertyTitle('answer'));
@@ -142,6 +149,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $date = new Carbon();
         $this->assertEquals($date, TestModel::cast(Model::TYPE_DATE, $date));
+
+        $date = TestModel2::cast(Model::TYPE_DATE, '2016-01-20 00:00:00', 'created_at');
+        $this->assertInstanceOf('Carbon\Carbon', $date);
+        $this->assertEquals(1453248000, $date->timestamp);
 
         $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, '{"test":true}'));
         $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, ['test' => true]));

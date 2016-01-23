@@ -84,6 +84,10 @@ class TestModel2 extends Model
         'object' => Model::TYPE_OBJECT,
     ];
 
+    protected static $dates = [
+        'created_at' => 'Y-m-d H:i:s',
+    ];
+
     protected static $autoTimestamps;
 
     protected static $validations = [

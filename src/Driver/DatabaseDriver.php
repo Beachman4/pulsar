@@ -36,7 +36,7 @@ class DatabaseDriver implements DriverInterface
 
     public function createModel(Model $model, array $parameters)
     {
-        $values = $this->serialize($parameters);
+        $values = $this->serialize($model, $parameters);
         $tablename = $this->getTablename($model);
 
         try {
@@ -69,7 +69,7 @@ class DatabaseDriver implements DriverInterface
             return true;
         }
 
-        $values = $this->serialize($parameters);
+        $values = $this->serialize($model, $parameters);
         $tablename = $this->getTablename($model);
 
         try {
@@ -168,14 +168,22 @@ class DatabaseDriver implements DriverInterface
      * Marshals a value to storage.
      *
      * @param mixed $value
+     * @param Model|string optional model class
+     * @param string $property optional property name
      *
      * @return mixed serialized value
      */
-    public function serializeValue($value)
+    public function serializeValue($value, $model = null, $property = null)
     {
-        // convert dates back to their numeric representation
+        // convert dates back to their string representation
         if ($value instanceof Carbon) {
-            return $value->timestamp;
+            if (!$model) {
+                $model = 'Pulsar\Model';
+            }
+
+            $format = $model::getDateFormat($property);
+
+            return $value->format($format);
         }
 
         // encode arrays/objects as JSON
@@ -189,14 +197,15 @@ class DatabaseDriver implements DriverInterface
     /**
      * Serializes an array of values.
      *
+     * @param Model|string model class
      * @param array $values
      *
      * @return array
      */
-    private function serialize(array $values)
+    private function serialize($model, array $values)
     {
-        foreach ($values as &$value) {
-            $value = $this->serializeValue($value);
+        foreach ($values as $k => &$value) {
+            $value = $this->serializeValue($value, $model, $k);
         }
 
         return $values;
