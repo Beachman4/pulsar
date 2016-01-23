@@ -330,17 +330,6 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(strtotime('today'), $data);
     }
 
-    public function testDbTimestamp()
-    {
-        $validator = $this->buildValidator('db_timestamp');
-        $data = mktime(23, 34, 20, 4, 18, 2012);
-        $this->assertTrue($this->validateWith($validator, $data));
-        $this->assertEquals('2012-04-18 23:34:20', $data);
-
-        $data = 'test';
-        $this->assertFalse($this->validateWith($validator, $data));
-    }
-
     public function testUnique()
     {
         $model = Mockery::mock('Pulsar\Model[totalRecords]');

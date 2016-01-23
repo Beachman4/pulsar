@@ -495,25 +495,6 @@ class Validator
     }
 
     /**
-     * Converts a Unix timestamp into a format compatible with database
-     * timestamp types.
-     *
-     * @param mixed $value
-     *
-     * @return bool
-     */
-    private function db_timestamp(&$value)
-    {
-        if (is_integer($value)) {
-            $value = Utility::unixToDb($value);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Checks if a value is unique for a model.
      *
      * @param mixed  $value
