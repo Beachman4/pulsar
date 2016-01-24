@@ -29,15 +29,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
         date_default_timezone_set('UTC');
     }
 
-    public function testInjectContainer()
-    {
-        $c = new \Pimple\Container();
-        Model::inject($c);
-
-        $model = new TestModel();
-        $this->assertEquals($c, $model->getApp());
-    }
-
     public function testDriverMissing()
     {
         $this->setExpectedException('Pulsar\Exception\DriverMissingException');

@@ -23,7 +23,6 @@ use Pulsar\Relation\HasOne;
 use Pulsar\Relation\BelongsTo;
 use Pulsar\Relation\HasMany;
 use Pulsar\Relation\BelongsToMany;
-use Pimple\Container;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class Model implements \ArrayAccess
@@ -71,19 +70,9 @@ abstract class Model implements \ArrayAccess
     protected static $dates = [];
 
     /**
-     * @staticvar \Pimple\Container
-     */
-    protected static $injectedApp;
-
-    /**
      * @staticvar array
      */
     protected static $dispatchers;
-
-    /**
-     * @var \Pimple\Container
-     */
-    protected $app;
 
     /**
      * @var array
@@ -150,8 +139,6 @@ abstract class Model implements \ArrayAccess
             $this->setValue($k, $v, false);
         }
 
-        $this->app = self::$injectedApp;
-
         // ensure the initialize function is called only once
         $k = get_called_class();
         if (!isset(self::$initialized[$k])) {
@@ -200,26 +187,6 @@ abstract class Model implements \ArrayAccess
         self::updating(function (ModelEvent $event) {
             $event->getModel()->updated_at = Carbon::now();
         });
-    }
-
-    /**
-     * Injects a DI container.
-     *
-     * @param \Pimple\Container $app
-     */
-    public static function inject(Container $app)
-    {
-        self::$injectedApp = $app;
-    }
-
-    /**
-     * Gets the DI container used for this model.
-     *
-     * @return \Pimple\Container
-     */
-    public function getApp()
-    {
-        return $this->app;
     }
 
     /**

@@ -8,23 +8,12 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-use Pimple\Container;
 use Stash\Pool;
 
 require_once 'tests/test_models.php';
 
 class CacheablelTest extends PHPUnit_Framework_TestCase
 {
-    public static $app;
-
-    public static function setUpBeforeClass()
-    {
-        // set up DI
-        self::$app = new Container();
-
-        CacheableModel::inject(self::$app);
-    }
-
     protected function tearDown()
     {
         CacheableModel::setCachePool(null);

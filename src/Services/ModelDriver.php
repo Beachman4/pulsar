@@ -22,9 +22,6 @@ class ModelDriver
 
     public function __construct($app)
     {
-        // make the app available to models
-        Model::inject($app);
-
         // make the locale available to models
         Model::setLocale($app['locale']);
 
