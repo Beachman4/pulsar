@@ -27,5 +27,8 @@ class ModelDriverTest extends PHPUnit_Framework_TestCase
 
         $driver = $service($app);
         $this->assertInstanceOf('Pulsar\Driver\DatabaseDriver', $driver);
+
+        $locale = Model::getLocale();
+        $this->assertEquals($app['locale'], $locale);
     }
 }

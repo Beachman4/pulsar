@@ -25,6 +25,9 @@ class ModelDriver
         // make the app available to models
         Model::inject($app);
 
+        // make the locale available to models
+        Model::setLocale($app['locale']);
+
         // set up the model driver
         $config = $app['config'];
         $class = $config->get('models.driver');

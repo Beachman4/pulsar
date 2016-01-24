@@ -149,7 +149,7 @@ abstract class Model implements \ArrayAccess
         foreach ($values as $k => $v) {
             $this->setValue($k, $v, false);
         }
-        // $this->_values = $values;
+
         $this->app = self::$injectedApp;
 
         // ensure the initialize function is called only once
@@ -264,6 +264,16 @@ abstract class Model implements \ArrayAccess
     public static function setLocale(Locale $locale)
     {
         self::$locale = $locale;
+    }
+
+    /**
+     * Gets the locale instance for all models.
+     *
+     * @return Locale
+     */
+    public static function getLocale()
+    {
+        return self::$locale;
     }
 
     /**
