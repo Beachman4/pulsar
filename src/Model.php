@@ -72,7 +72,7 @@ abstract class Model implements \ArrayAccess
     /**
      * @staticvar array
      */
-    protected static $dispatchers;
+    protected static $dispatchers = [];
 
     /**
      * @var array
