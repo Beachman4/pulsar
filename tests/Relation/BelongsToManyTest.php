@@ -51,4 +51,13 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(11, $result[0]->id());
         $this->assertEquals(12, $result[1]->id());
     }
+
+    public function testEmpty()
+    {
+        $model = new TestModel2(['test_model_id' => null]);
+
+        $relation = new BelongsToMany('TestModel', 'id', 'test_model_id', $model);
+
+        $this->assertNull($relation->getResults());
+    }
 }

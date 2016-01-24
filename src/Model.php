@@ -146,7 +146,10 @@ abstract class Model implements \ArrayAccess
      */
     public function __construct(array $values = [])
     {
-        $this->_values = $values;
+        foreach ($values as $k => $v) {
+            $this->setValue($k, $v, false);
+        }
+        // $this->_values = $values;
         $this->app = self::$injectedApp;
 
         // ensure the initialize function is called only once
@@ -622,12 +625,13 @@ abstract class Model implements \ArrayAccess
      *
      * @param string $name
      * @param mixed  $value
+     * @param bool   $unsaved when true, sets an unsaved value
      *
      * @throws BadMethodCallException when setting a relationship
      *
      * @return self
      */
-    public function setValue($name, $value)
+    public function setValue($name, $value, $unsaved = true)
     {
         if (static::isRelationship($name)) {
             throw new BadMethodCallException("Cannot set the `$name` property because it is a relationship");
@@ -638,18 +642,24 @@ abstract class Model implements \ArrayAccess
             $value = static::cast($type, $value, $name);
         }
 
-        // set using any mutators
+        // apply any mutators
         if ($mutator = self::getMutator($name)) {
-            $this->_unsaved[$name] = $this->$mutator($value);
-        } else {
+            $value = $this->$mutator($value);
+        }
+
+        // save the value on the model property
+        if ($unsaved) {
             $this->_unsaved[$name] = $value;
+        } else {
+            $this->_values[$name] = $value;
         }
 
         return $this;
     }
 
     /**
-     * Sets a collection values on the model from an untrusted input.
+     * Sets a collection values on the model from an untrusted
+     * input. Also known as mass assignment.
      *
      * @param array $values
      *
@@ -771,10 +781,14 @@ abstract class Model implements \ArrayAccess
         // get the values for the properties
         $result = $this->get($properties);
 
-        // convert any models to arrays
-        foreach ($result as &$value) {
+        foreach ($result as $k => &$value) {
+            // convert any models to arrays
             if ($value instanceof self) {
                 $value = $value->toArray();
+            // convert any Carbon objects to date strings
+            } elseif ($value instanceof Carbon) {
+                $format = self::getDateFormat($k);
+                $value = $value->format($format);
             }
         }
 

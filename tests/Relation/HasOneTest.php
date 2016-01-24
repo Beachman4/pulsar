@@ -45,4 +45,13 @@ class HasOneTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('TestModel', $result);
         $this->assertEquals(11, $result->id());
     }
+
+    public function testEmpty()
+    {
+        $model = new TestModel2(['test_model_id' => null]);
+
+        $relation = new HasOne('TestModel', 'test_model_id', 'id', $model);
+
+        $this->assertNull($relation->getResults());
+    }
 }

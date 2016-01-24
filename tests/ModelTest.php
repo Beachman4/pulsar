@@ -323,8 +323,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'validate' => null,
             'unique' => null,
             'required' => null,
-            'created_at' => 4,
-            'updated_at' => 5,
             // hidden
             'validate2' => null,
         ]);
@@ -342,13 +340,33 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'validate' => null,
             'unique' => null,
             'required' => null,
-            'created_at' => 4,
-            'updated_at' => 5,
             'person' => [
                 'id' => 3,
                 'name' => 'Bob',
                 'email' => 'bob@example.com',
             ],
+        ];
+
+        $this->assertEquals($expected, $model->toArray());
+    }
+
+    public function testToArrayWithDates()
+    {
+        $model = new TestModel2([
+            'id' => 1,
+            'id2' => 2,
+            'person_id' => null,
+            'created_at' => '2016-01-20 00:00:00',
+            'updated_at' => 5,
+        ]);
+
+        $expected = [
+            'id' => 1,
+            'id2' => 2,
+            'person' => null,
+            'default' => 'some default value',
+            'created_at' => '2016-01-20 00:00:00',
+            'updated_at' => '5',
         ];
 
         $this->assertEquals($expected, $model->toArray());

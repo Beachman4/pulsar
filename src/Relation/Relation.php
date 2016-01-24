@@ -40,6 +40,11 @@ abstract class Relation
      */
     protected $relation;
 
+    /**
+     * @var bool
+     */
+    protected $empty;
+
     public function __construct($model, $foreignKey, $localKey, Model $relation)
     {
         $this->model = $model;
