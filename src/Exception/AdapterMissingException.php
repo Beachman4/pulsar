@@ -10,6 +10,6 @@
  */
 namespace Pulsar\Exception;
 
-class DriverMissingException extends ModelException
+class AdapterMissingException extends ModelException
 {
 }

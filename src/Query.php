@@ -233,7 +233,7 @@ class Query
     }
 
     /**
-     * Executes the query against the model's driver.
+     * Executes the query against the model's adapter.
      *
      * @return array results
      */
@@ -241,10 +241,10 @@ class Query
     {
         $model = $this->model;
 
-        $driver = $model::getDriver();
+        $adapter = $model::getAdapter();
 
         $models = [];
-        foreach ($driver->queryModels($this) as $row) {
+        foreach ($adapter->queryModels($this) as $row) {
             // create a model with the retrieved values
             $obj = new $model();
             $obj->refreshWith($row);
@@ -265,7 +265,7 @@ class Query
     }
 
     /**
-     * Executes the query against the model's driver and returns the first result.
+     * Executes the query against the model's adapter and returns the first result.
      *
      * @param int $limit
      * 

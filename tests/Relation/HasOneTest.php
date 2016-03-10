@@ -15,12 +15,12 @@ class HasOneTest extends PHPUnit_Framework_TestCase
 {
     public static function setUpBeforeClass()
     {
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
-        $driver->shouldReceive('queryModels')
-               ->andReturn([['id' => 11]]);
+        $adapter->shouldReceive('queryModels')
+                ->andReturn([['id' => 11]]);
 
-        Model::setDriver($driver);
+        Model::setAdapter($adapter);
     }
 
     public function testInitQuery()

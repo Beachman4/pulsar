@@ -9,11 +9,11 @@
  * @license MIT
  */
 use Carbon\Carbon;
-use Pulsar\Driver\DatabaseDriver;
+use Pulsar\Adapter\DatabaseAdapter;
 use Pulsar\Query;
 use Pimple\Container;
 
-class DatabaseDriverTest extends PHPUnit_Framework_TestCase
+class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
 {
     public static $app;
 
@@ -24,30 +24,30 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
     public function testTablename()
     {
-        $driver = new DatabaseDriver(self::$app);
+        $adapter = new DatabaseAdapter(self::$app);
 
-        $this->assertEquals('TestModels', $driver->getTablename('TestModel'));
+        $this->assertEquals('TestModels', $adapter->getTablename('TestModel'));
 
         $model = new TestModel();
-        $this->assertEquals('TestModels', $driver->getTablename($model));
+        $this->assertEquals('TestModels', $adapter->getTablename($model));
     }
 
     public function testSerializeValue()
     {
-        $driver = new DatabaseDriver(self::$app);
+        $adapter = new DatabaseAdapter(self::$app);
 
-        $this->assertEquals('string', $driver->serializeValue('string'));
+        $this->assertEquals('string', $adapter->serializeValue('string'));
 
         $arr = ['test' => true];
-        $this->assertEquals('{"test":true}', $driver->serializeValue($arr));
+        $this->assertEquals('{"test":true}', $adapter->serializeValue($arr));
 
         $obj = new stdClass();
         $obj->test = true;
-        $this->assertEquals('{"test":true}', $driver->serializeValue($obj));
+        $this->assertEquals('{"test":true}', $adapter->serializeValue($obj));
 
-        $this->assertEquals(time(), $driver->serializeValue(Carbon::now()));
+        $this->assertEquals(time(), $adapter->serializeValue(Carbon::now()));
 
-        $this->assertEquals('2016-01-20 00:00:00', $driver->serializeValue(Carbon::create(2016, 1, 20, 0, 0, 0), 'TestModel2', 'created_at'));
+        $this->assertEquals('2016-01-20 00:00:00', $adapter->serializeValue(Carbon::create(2016, 1, 20, 0, 0, 0), 'TestModel2', 'created_at'));
     }
 
     public function testCreateModel()
@@ -70,16 +70,16 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
         $model = new Person();
-        $this->assertTrue($driver->createModel($model, ['answer' => 42, 'array' => ['test' => true]]));
+        $this->assertTrue($adapter->createModel($model, ['answer' => 42, 'array' => ['test' => true]]));
     }
 
     public function testCreateModelFail()
     {
-        $this->setExpectedException('Pulsar\Exception\DriverException', 'An error occurred in the database driver when creating the Person');
+        $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter when creating the Person');
 
         $db = Mockery::mock();
         $db->shouldReceive('insert')
@@ -87,11 +87,11 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
         $model = new Person();
-        $driver->createModel($model, []);
+        $adapter->createModel($model, []);
     }
 
     public function testGetCreatedID()
@@ -102,15 +102,15 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
+        $adapter = new DatabaseAdapter(self::$app);
 
         $model = new Person();
-        $this->assertEquals(1, $driver->getCreatedID($model, 'id'));
+        $this->assertEquals(1, $adapter->getCreatedID($model, 'id'));
     }
 
     public function testGetCreatedIDFail()
     {
-        $this->setExpectedException('Pulsar\Exception\DriverException', 'An error occurred in the database driver when getting the ID of the new Person');
+        $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter when getting the ID of the new Person');
 
         $db = Mockery::mock();
         $db->shouldReceive('getPDO->lastInsertId')
@@ -118,10 +118,10 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
+        $adapter = new DatabaseAdapter(self::$app);
 
         $model = new Person();
-        $driver->getCreatedID($model, 'id');
+        $adapter->getCreatedID($model, 'id');
     }
 
     public function testUpdateModel()
@@ -145,20 +145,20 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
         $model = Person::buildFromId(11);
 
-        $this->assertTrue($driver->updateModel($model, []));
+        $this->assertTrue($adapter->updateModel($model, []));
 
         $parameters = ['name' => 'John', 'array' => ['test' => true]];
-        $this->assertTrue($driver->updateModel($model, $parameters));
+        $this->assertTrue($adapter->updateModel($model, $parameters));
     }
 
     public function testUpdateModelFail()
     {
-        $this->setExpectedException('Pulsar\Exception\DriverException', 'An error occurred in the database driver when updating the Person');
+        $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter when updating the Person');
 
         // update query mock
         $db = Mockery::mock();
@@ -167,12 +167,12 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
         $model = Person::buildFromId(11);
 
-        $driver->updateModel($model, ['name' => 'John']);
+        $adapter->updateModel($model, ['name' => 'John']);
     }
 
     public function testDeleteModel()
@@ -184,16 +184,16 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
         $model = Person::buildFromId(10);
-        $this->assertTrue($driver->deleteModel($model));
+        $this->assertTrue($adapter->deleteModel($model));
     }
 
     public function testDeleteModelFail()
     {
-        $this->setExpectedException('Pulsar\Exception\DriverException', 'An error occurred in the database driver while deleting the Person');
+        $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter while deleting the Person');
 
         $stmt = Mockery::mock('PDOStatement');
         $db = Mockery::mock();
@@ -202,11 +202,11 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
         $model = Person::buildFromId(10);
-        $driver->deleteModel($model);
+        $adapter->deleteModel($model);
     }
 
     public function testTotalRecords()
@@ -232,15 +232,15 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
-        $this->assertEquals(1, $driver->totalRecords($query));
+        $this->assertEquals(1, $adapter->totalRecords($query));
     }
 
     public function testTotalRecordsFail()
     {
-        $this->setExpectedException('Pulsar\Exception\DriverException', 'An error occurred in the database driver while getting the number of Person objects');
+        $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter while getting the number of Person objects');
 
         $query = new Query('Person');
 
@@ -251,10 +251,10 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
-        $driver->totalRecords($query);
+        $adapter->totalRecords($query);
     }
 
     public function testQueryModels()
@@ -299,15 +299,15 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
-        $this->assertEquals([['name' => 'Bob']], $driver->queryModels($query));
+        $this->assertEquals([['name' => 'Bob']], $adapter->queryModels($query));
     }
 
     public function testQueryModelsFail()
     {
-        $this->setExpectedException('Pulsar\Exception\DriverException', 'An error occurred in the database driver while performing the Person query');
+        $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter while performing the Person query');
 
         $query = new Query('Person');
 
@@ -318,9 +318,9 @@ class DatabaseDriverTest extends PHPUnit_Framework_TestCase
 
         self::$app['db'] = $db;
 
-        $driver = new DatabaseDriver(self::$app);
-        Person::setDriver($driver);
+        $adapter = new DatabaseAdapter(self::$app);
+        Person::setAdapter($adapter);
 
-        $driver->queryModels($query);
+        $adapter->queryModels($query);
     }
 }

@@ -9,24 +9,24 @@
  * @license MIT
  */
 use Infuse\Application;
-use Pulsar\Services\ModelDriver;
+use Pulsar\Services\ModelAdapter;
 use Pulsar\Model;
 
-class ModelDriverTest extends PHPUnit_Framework_TestCase
+class ModelAdapterTest extends PHPUnit_Framework_TestCase
 {
     public function testInvoke()
     {
         $config = [
             'models' => [
-                'driver' => 'Pulsar\Driver\DatabaseDriver',
+                'adapter' => 'Pulsar\Adapter\DatabaseAdapter',
             ],
         ];
         $app = new Application($config);
-        $service = new ModelDriver($app);
-        $this->assertInstanceOf('Pulsar\Driver\DatabaseDriver', Model::getDriver());
+        $service = new ModelAdapter($app);
+        $this->assertInstanceOf('Pulsar\Adapter\DatabaseAdapter', Model::getAdapter());
 
-        $driver = $service($app);
-        $this->assertInstanceOf('Pulsar\Driver\DatabaseDriver', $driver);
+        $adapter = $service($app);
+        $this->assertInstanceOf('Pulsar\Adapter\DatabaseAdapter', $adapter);
 
         $locale = Model::getLocale();
         $this->assertEquals($app['locale'], $locale);

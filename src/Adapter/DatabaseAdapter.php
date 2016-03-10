@@ -8,18 +8,18 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-namespace Pulsar\Driver;
+namespace Pulsar\Adapter;
 
 use Carbon\Carbon;
 use ICanBoogie\Inflector;
-use Pulsar\Exception\DriverException;
+use Pulsar\Exception\AdapterException;
 use Pulsar\Model;
 use Pulsar\Query;
 use PDOException;
 use PDOStatement;
 use Pimple\Container;
 
-class DatabaseDriver implements DriverInterface
+class DatabaseAdapter implements AdapterInterface
 {
     /**
      * @var \Pimple\Container
@@ -44,7 +44,7 @@ class DatabaseDriver implements DriverInterface
                 ->into($tablename)
                 ->execute() instanceof PDOStatement;
         } catch (PDOException $original) {
-            $e = new DriverException('An error occurred in the database driver when creating the '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter when creating the '.$model::modelName());
             $e->setException($original);
             throw $e;
         }
@@ -55,7 +55,7 @@ class DatabaseDriver implements DriverInterface
         try {
             $id = $this->app['db']->getPDO()->lastInsertId();
         } catch (PDOException $original) {
-            $e = new DriverException('An error occurred in the database driver when getting the ID of the new '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter when getting the ID of the new '.$model::modelName());
             $e->setException($original);
             throw $e;
         }
@@ -78,7 +78,7 @@ class DatabaseDriver implements DriverInterface
                 ->where($model->ids())
                 ->execute() instanceof PDOStatement;
         } catch (PDOException $original) {
-            $e = new DriverException('An error occurred in the database driver when updating the '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter when updating the '.$model::modelName());
             $e->setException($original);
             throw $e;
         }
@@ -93,7 +93,7 @@ class DatabaseDriver implements DriverInterface
                 ->where($model->ids())
                 ->execute() instanceof PDOStatement;
         } catch (PDOException $original) {
-            $e = new DriverException('An error occurred in the database driver while deleting the '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter while deleting the '.$model::modelName());
             $e->setException($original);
             throw $e;
         }
@@ -125,7 +125,7 @@ class DatabaseDriver implements DriverInterface
         try {
             $data = $dbQuery->all();
         } catch (PDOException $original) {
-            $e = new DriverException('An error occurred in the database driver while performing the '.$model::modelName().' query');
+            $e = new AdapterException('An error occurred in the database adapter while performing the '.$model::modelName().' query');
             $e->setException($original);
             throw $e;
         }
@@ -144,7 +144,7 @@ class DatabaseDriver implements DriverInterface
                 ->where($query->getWhere())
                 ->scalar();
         } catch (PDOException $original) {
-            $e = new DriverException('An error occurred in the database driver while getting the number of '.$model::modelName().' objects');
+            $e = new AdapterException('An error occurred in the database adapter while getting the number of '.$model::modelName().' objects');
             $e->setException($original);
             throw $e;
         }

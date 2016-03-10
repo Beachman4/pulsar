@@ -12,7 +12,7 @@ namespace Pulsar\Exception;
 
 use Exception;
 
-class DriverException extends ModelException
+class AdapterException extends ModelException
 {
     /**
      * @var Exception

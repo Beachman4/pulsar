@@ -13,23 +13,23 @@ namespace Pulsar\Services;
 use Pulsar\Model;
 use Pulsar\Validator;
 
-class ModelDriver
+class ModelAdapter
 {
     /**
-     * @var Pulsar\Driver\DriverInterface
+     * @var Pulsar\Adapter\AdapterInterface
      */
-    private $driver;
+    private $adapter;
 
     public function __construct($app)
     {
         // make the locale available to models
         Model::setLocale($app['locale']);
 
-        // set up the model driver
+        // set up the model adapter
         $config = $app['config'];
-        $class = $config->get('models.driver');
-        $this->driver = new $class($app);
-        Model::setDriver($this->driver);
+        $class = $config->get('models.adapter');
+        $this->adapter = new $class($app);
+        Model::setAdapter($this->adapter);
 
         // used for password hasing
         Validator::configure(['salt' => $config->get('app.salt')]);
@@ -37,6 +37,6 @@ class ModelDriver
 
     public function __invoke()
     {
-        return $this->driver;
+        return $this->adapter;
     }
 }

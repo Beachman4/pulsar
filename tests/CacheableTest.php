@@ -76,13 +76,13 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
         $cache = new Pool();
         CacheableModel::setCachePool($cache);
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
-        $driver->shouldReceive('queryModels')
-               ->andReturn([['id' => 100, 'answer' => 42]])
-               ->once();
+        $adapter->shouldReceive('queryModels')
+                ->andReturn([['id' => 100, 'answer' => 42]])
+                ->once();
 
-        CacheableModel::setDriver($driver);
+        CacheableModel::setAdapter($adapter);
 
         // the first find() call should be a miss
         // this triggers a load from the data layer

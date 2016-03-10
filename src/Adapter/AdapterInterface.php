@@ -8,12 +8,12 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-namespace Pulsar\Driver;
+namespace Pulsar\Adapter;
 
 use Pulsar\Model;
 use Pulsar\Query;
 
-interface DriverInterface
+interface AdapterInterface
 {
     /**
      * Creates a model.
@@ -23,12 +23,12 @@ interface DriverInterface
      *
      * @return mixed result
      *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
+     * @throws \Pulsar\Exception\AdapterException when an exception occurs within the adapter
      */
     public function createModel(Model $model, array $parameters);
 
     /**
-     * Gets the last inserted ID. Used for drivers that generate
+     * Gets the last inserted ID. Used for adapters that generate
      * IDs for models after creation.
      *
      * @param \Pulsar\Model $model
@@ -36,7 +36,7 @@ interface DriverInterface
      *
      * @return mixed
      *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
+     * @throws \Pulsar\Exception\AdapterException when an exception occurs within the adapter
      */
     public function getCreatedID(Model $model, $propertyName);
 
@@ -48,7 +48,7 @@ interface DriverInterface
      *
      * @return bool
      *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
+     * @throws \Pulsar\Exception\AdapterException when an exception occurs within the adapter
      */
     public function updateModel(Model $model, array $parameters);
 
@@ -59,7 +59,7 @@ interface DriverInterface
      *
      * @return bool
      *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
+     * @throws \Pulsar\Exception\AdapterException when an exception occurs within the adapter
      */
     public function deleteModel(Model $model);
 
@@ -70,7 +70,7 @@ interface DriverInterface
      *
      * @return int total
      *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
+     * @throws \Pulsar\Exception\AdapterException when an exception occurs within the adapter
      */
     public function totalRecords(Query $query);
 
@@ -81,7 +81,7 @@ interface DriverInterface
      *
      * @return array raw data from storage
      *
-     * @throws \Pulsar\Exception\DriverException when an exception occurs within the driver
+     * @throws \Pulsar\Exception\AdapterException when an exception occurs within the adapter
      */
     public function queryModels(Query $query);
 }

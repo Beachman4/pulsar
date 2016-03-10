@@ -77,7 +77,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
     {
         $query = new Query('Person');
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
         $data = [
             [
@@ -92,11 +92,11 @@ class QueryTest extends PHPUnit_Framework_TestCase
             ],
         ];
 
-        $driver->shouldReceive('queryModels')
-               ->withArgs([$query])
-               ->andReturn($data);
+        $adapter->shouldReceive('queryModels')
+                ->withArgs([$query])
+                ->andReturn($data);
 
-        Person::setDriver($driver);
+        Person::setAdapter($adapter);
 
         $result = $query->execute();
 
@@ -116,7 +116,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
     {
         $query = new Query('TestModel2');
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
         $data = [
             [
@@ -129,11 +129,11 @@ class QueryTest extends PHPUnit_Framework_TestCase
             ],
         ];
 
-        $driver->shouldReceive('queryModels')
-               ->withArgs([$query])
-               ->andReturn($data);
+        $adapter->shouldReceive('queryModels')
+                ->withArgs([$query])
+                ->andReturn($data);
 
-        TestModel2::setDriver($driver);
+        TestModel2::setAdapter($adapter);
 
         $result = $query->execute();
 
@@ -158,7 +158,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
     {
         $query = new Query('Person');
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
         $data = [
             [
@@ -168,11 +168,11 @@ class QueryTest extends PHPUnit_Framework_TestCase
             ],
         ];
 
-        $driver->shouldReceive('queryModels')
-               ->withArgs([$query])
-               ->andReturn($data);
+        $adapter->shouldReceive('queryModels')
+                ->withArgs([$query])
+                ->andReturn($data);
 
-        Person::setDriver($driver);
+        Person::setAdapter($adapter);
 
         $result = $query->first();
 
@@ -185,7 +185,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
     {
         $query = new Query('Person');
 
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
         $data = [
             [
@@ -200,11 +200,11 @@ class QueryTest extends PHPUnit_Framework_TestCase
             ],
         ];
 
-        $driver->shouldReceive('queryModels')
-               ->withArgs([$query])
-               ->andReturn($data);
+        $adapter->shouldReceive('queryModels')
+                ->withArgs([$query])
+                ->andReturn($data);
 
-        Person::setDriver($driver);
+        Person::setAdapter($adapter);
 
         $result = $query->first(2);
 

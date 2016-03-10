@@ -13,7 +13,7 @@ use Pulsar\Query;
 
 class IteratorTest extends PHPUnit_Framework_TestCase
 {
-    public static $driver;
+    public static $adapter;
     public static $query;
     public static $iterator;
     public static $start = 10;
@@ -23,10 +23,10 @@ class IteratorTest extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
-        $driver = Mockery::mock('Pulsar\Driver\DriverInterface');
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
-        $driver->shouldReceive('queryModels')
-               ->andReturnUsing(function ($query) {
+        $adapter->shouldReceive('queryModels')
+                ->andReturnUsing(function ($query) {
                     if (IteratorTest::$noResults) {
                         return [];
                     }
@@ -40,13 +40,13 @@ class IteratorTest extends PHPUnit_Framework_TestCase
                     return $range;
                });
 
-        $driver->shouldReceive('totalRecords')
+        $adapter->shouldReceive('totalRecords')
                ->andReturnUsing(function () {
                     return IteratorTest::$totalRecords;
                 });
 
-        self::$driver = $driver;
-        IteratorTestModel::setDriver(self::$driver);
+        self::$adapter = $adapter;
+        IteratorTestModel::setAdapter(self::$adapter);
 
         self::$query = new Query('IteratorTestModel');
         self::$query->start(self::$start)

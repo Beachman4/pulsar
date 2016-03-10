@@ -15,8 +15,8 @@ use Carbon\Carbon;
 use ICanBoogie\Inflector;
 use Infuse\Locale;
 use InvalidArgumentException;
-use Pulsar\Driver\DriverInterface;
-use Pulsar\Exception\DriverMissingException;
+use Pulsar\Adapter\AdapterInterface;
+use Pulsar\Exception\AdapterMissingException;
 use Pulsar\Exception\MassAssignmentException;
 use Pulsar\Exception\NotFoundException;
 use Pulsar\Relation\HasOne;
@@ -104,9 +104,9 @@ abstract class Model implements \ArrayAccess
     private static $initialized = [];
 
     /**
-     * @staticvar DriverInterface
+     * @staticvar AdapterInterface
      */
-    private static $driver;
+    private static $adapter;
 
     /**
      * @staticvar Locale
@@ -190,37 +190,37 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Sets the driver for all models.
+     * Sets the adapter for all models.
      *
-     * @param DriverInterface $driver
+     * @param AdapterInterface $adapter
      */
-    public static function setDriver(DriverInterface $driver)
+    public static function setAdapter(AdapterInterface $adapter)
     {
-        self::$driver = $driver;
+        self::$adapter = $adapter;
     }
 
     /**
-     * Gets the driver for all models.
+     * Gets the adapter for all models.
      *
-     * @return DriverInterface
+     * @return AdapterInterface
      *
-     * @throws DriverMissingException
+     * @throws AdapterMissingException
      */
-    public static function getDriver()
+    public static function getAdapter()
     {
-        if (!self::$driver) {
-            throw new DriverMissingException('A model driver has not been set yet.');
+        if (!self::$adapter) {
+            throw new AdapterMissingException('A model adapter has not been set yet.');
         }
 
-        return self::$driver;
+        return self::$adapter;
     }
 
     /**
-     * Clears the driver for all models.
+     * Clears the adapter for all models.
      */
-    public static function clearDriver()
+    public static function clearAdapter()
     {
-        self::$driver = null;
+        self::$adapter = null;
     }
 
     /**
@@ -822,8 +822,8 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // create the model using the driver
-        if (!self::getDriver()->createModel($this, $this->_unsaved)) {
+        // create the model using the adapter
+        if (!self::getAdapter()->createModel($this, $this->_unsaved)) {
             return false;
         }
 
@@ -853,7 +853,7 @@ abstract class Model implements \ArrayAccess
                 $ids[$k] = $this->_unsaved[$k];
             // otherwise, get it from the data layer (i.e. auto-incrementing IDs)
             } else {
-                $ids[$k] = self::getDriver()->getCreatedID($this, $k);
+                $ids[$k] = self::getAdapter()->getCreatedID($this, $k);
             }
         }
 
@@ -894,8 +894,8 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // update the model using the driver
-        if (!self::getDriver()->updateModel($this, $this->_unsaved)) {
+        // update the model using the adapter
+        if (!self::getAdapter()->updateModel($this, $this->_unsaved)) {
             return false;
         }
 
@@ -925,7 +925,7 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        $deleted = self::getDriver()->deleteModel($this);
+        $deleted = self::getAdapter()->deleteModel($this);
 
         if ($deleted) {
             // dispatch the model.deleted event
@@ -966,7 +966,7 @@ abstract class Model implements \ArrayAccess
         $query = static::query();
         $query->where($this->ids());
 
-        $values = self::getDriver()->queryModels($query);
+        $values = self::getAdapter()->queryModels($query);
 
         if (count($values) === 0) {
             return $this;
@@ -1064,7 +1064,7 @@ abstract class Model implements \ArrayAccess
         $query = static::query();
         $query->where($where);
 
-        return self::getDriver()->totalRecords($query);
+        return self::getAdapter()->totalRecords($query);
     }
 
     /////////////////////////////

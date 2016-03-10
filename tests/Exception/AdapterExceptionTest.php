@@ -1,13 +1,13 @@
 <?php
 
-use Pulsar\Exception\DriverException;
+use Pulsar\Exception\AdapterException;
 
-class DriverExceptionTest extends PHPUnit_Framework_TestCase
+class AdapterExceptionTest extends PHPUnit_Framework_TestCase
 {
     public function testException()
     {
         $e = new Exception();
-        $ex = new DriverException();
+        $ex = new AdapterException();
         $ex->setException($e);
         $this->assertEquals($e, $ex->getException());
     }
