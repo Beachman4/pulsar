@@ -22,16 +22,6 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
         self::$app = new Container();
     }
 
-    public function testTablename()
-    {
-        $adapter = new DatabaseAdapter(self::$app);
-
-        $this->assertEquals('TestModels', $adapter->getTablename('TestModel'));
-
-        $model = new TestModel();
-        $this->assertEquals('TestModels', $adapter->getTablename($model));
-    }
-
     public function testSerializeValue()
     {
         $adapter = new DatabaseAdapter(self::$app);

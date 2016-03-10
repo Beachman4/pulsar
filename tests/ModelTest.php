@@ -59,6 +59,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setAdapter($adapter);
     }
 
+    public function testTablename()
+    {
+        $this->assertEquals('TestModels', TestModel::tablename());
+
+        $model = new TestModel2();
+        $this->assertEquals('TestModel2s', $model::tablename());
+    }
+
     public function testGetIdProperties()
     {
         $this->assertEquals(['id'], TestModel::getIdProperties());

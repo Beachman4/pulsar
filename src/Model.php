@@ -262,6 +262,18 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Gets the table name of the model.
+     *
+     * @return string
+     */
+    public static function tablename()
+    {
+        $inflector = Inflector::get();
+
+        return $inflector->camelize($inflector->pluralize(static::modelName()));
+    }
+
+    /**
      * Gets the model ID.
      *
      * @return string|number|null ID

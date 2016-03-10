@@ -11,7 +11,6 @@
 namespace Pulsar\Adapter;
 
 use Carbon\Carbon;
-use ICanBoogie\Inflector;
 use Pulsar\Exception\AdapterException;
 use Pulsar\Model;
 use Pulsar\Query;
@@ -37,7 +36,7 @@ class DatabaseAdapter implements AdapterInterface
     public function createModel(Model $model, array $parameters)
     {
         $values = $this->serialize($model, $parameters);
-        $tablename = $this->getTablename($model);
+        $tablename = $model::tablename();
 
         try {
             return $this->app['db']->insert($values)
@@ -70,7 +69,7 @@ class DatabaseAdapter implements AdapterInterface
         }
 
         $values = $this->serialize($model, $parameters);
-        $tablename = $this->getTablename($model);
+        $tablename = $model::tablename();
 
         try {
             return $this->app['db']->update($tablename)
@@ -86,7 +85,7 @@ class DatabaseAdapter implements AdapterInterface
 
     public function deleteModel(Model $model)
     {
-        $tablename = $this->getTablename($model);
+        $tablename = $model::tablename();
 
         try {
             return $this->app['db']->delete($tablename)
@@ -102,7 +101,7 @@ class DatabaseAdapter implements AdapterInterface
     public function queryModels(Query $query)
     {
         $model = $query->getModel();
-        $tablename = $this->getTablename($model);
+        $tablename = $model::tablename();
 
         // build a DB query from the model query
         $dbQuery = $this->app['db']
@@ -116,7 +115,7 @@ class DatabaseAdapter implements AdapterInterface
         foreach ($query->getJoins() as $join) {
             list($foreignModel, $column, $foreignKey) = $join;
 
-            $foreignTablename = $this->getTablename($foreignModel);
+            $foreignTablename = $foreignModel::tablename();
             $condition = $this->prefixColumn($column, $tablename).'='.$this->prefixColumn($foreignKey, $foreignTablename);
 
             $dbQuery->join($foreignTablename, $condition);
@@ -136,7 +135,7 @@ class DatabaseAdapter implements AdapterInterface
     public function totalRecords(Query $query)
     {
         $model = $query->getModel();
-        $tablename = $this->getTablename($model);
+        $tablename = $model::tablename();
 
         try {
             return (int) $this->app['db']->select('count(*)')
@@ -148,20 +147,6 @@ class DatabaseAdapter implements AdapterInterface
             $e->setException($original);
             throw $e;
         }
-    }
-
-    /**
-     * Generates the tablename for the model.
-     *
-     * @param string|Model $model
-     *
-     * @return string
-     */
-    public function getTablename($model)
-    {
-        $inflector = Inflector::get();
-
-        return $inflector->camelize($inflector->pluralize($model::modelName()));
     }
 
     /**
