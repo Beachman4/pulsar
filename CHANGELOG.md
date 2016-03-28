@@ -37,6 +37,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Date values are now `Carbon` objects instead of integers.
 - Auto timestamps, `created_at` and `updated_at` are generated in the model layer instead of by the data layer.
 - Support custom date formats in the data layer, in addition to the default UNIX timestamp. Can be specified per-property with `::$dates`.
+- Support Symfony 3.
 
 ### Removed
 - Removed `toArrayDeprecated()`.
