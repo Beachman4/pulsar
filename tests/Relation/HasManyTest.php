@@ -13,39 +13,38 @@ use Pulsar\Relation\HasMany;
 
 class HasManyTest extends PHPUnit_Framework_TestCase
 {
+    public static $adapter;
+
     public static function setUpBeforeClass()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
-
-        $adapter->shouldReceive('queryModels')
-                ->andReturn([['id' => 11], ['id' => 12]]);
-
-        Model::setAdapter($adapter);
+        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        Model::setAdapter(self::$adapter);
     }
 
     public function testInitQuery()
     {
-        $model = new TestModel2();
-        $model->id = 10;
+        $person = new Person(['id' => 10]);
 
-        $relation = new HasMany('TestModel', 'test_model_id', 'id', $model);
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
 
-        $this->assertEquals(['test_model_id' => 10], $relation->getQuery()->getWhere());
+        $this->assertEquals(['person_id' => 10], $relation->getQuery()->getWhere());
     }
 
     public function testGetResults()
     {
-        $model = new TestModel2();
-        $model->id = 10;
+        $person = new Person(['id' => 10]);
 
-        $relation = new HasMany('TestModel', 'test_model_id', 'id', $model);
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
+
+        self::$adapter->shouldReceive('queryModels')
+                      ->andReturn([['id' => 11], ['id' => 12]]);
 
         $result = $relation->getResults();
 
         $this->assertCount(2, $result);
 
         foreach ($result as $m) {
-            $this->assertInstanceOf('TestModel', $m);
+            $this->assertInstanceOf('Car', $m);
         }
 
         $this->assertEquals(11, $result[0]->id());
@@ -54,10 +53,30 @@ class HasManyTest extends PHPUnit_Framework_TestCase
 
     public function testEmpty()
     {
-        $model = new TestModel2(['test_model_id' => null]);
+        $person = new Person(['person_id' => null]);
 
-        $relation = new HasMany('TestModel', 'test_model_id', 'id', $model);
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
 
         $this->assertNull($relation->getResults());
+    }
+
+    public function testCreate()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
+
+        self::$adapter->shouldReceive('createModel')
+                      ->andReturn(true);
+
+        self::$adapter->shouldReceive('getCreatedID')
+                     ->andReturn(1);
+
+        $car = $relation->create(['test' => true]);
+
+        $this->assertInstanceOf('Car', $car);
+        $this->assertEquals(100, $car->person_id);
+        $this->assertEquals(true, $car->test);
+        $this->assertTrue($car->persisted());
     }
 }

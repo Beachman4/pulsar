@@ -16,7 +16,7 @@ class Query
     const MAX_LIMIT = 1000;
 
     /**
-     * @var string
+     * @var Model
      */
     private $model;
 
@@ -46,9 +46,9 @@ class Query
     private $sort;
 
     /**
-     * @param string $model model class
+     * @param Model $model model class
      */
-    public function __construct($model = '')
+    public function __construct(Model $model = null)
     {
         $this->model = $model;
         $this->joins = [];
@@ -61,7 +61,7 @@ class Query
     /**
      * Gets the model class associated with this query.
      *
-     * @return string
+     * @return Model
      */
     public function getModel()
     {
@@ -210,14 +210,14 @@ class Query
      * to the ID of the model we are joining.
      *
      * @param string $model      model being joined
-     * @param string $column     name of local property
-     * @param string $foreignKey
+     * @param string $localKey   name of local property
+     * @param string $foreignKey name of foreign property
      *
      * @return self
      */
-    public function join($model, $column, $foreignKey)
+    public function join($model, $localKey, $foreignKey)
     {
-        $this->joins[] = [$model, $column, $foreignKey];
+        $this->joins[] = [$model, $localKey, $foreignKey];
 
         return $this;
     }

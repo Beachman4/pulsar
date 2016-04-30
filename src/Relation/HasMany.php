@@ -15,7 +15,7 @@ class HasMany extends Relation
     protected function initQuery()
     {
         $localKey = $this->localKey;
-        $value = $this->relation->$localKey;
+        $value = $this->localModel->$localKey;
 
         if ($value === null) {
             $this->empty = true;
@@ -31,5 +31,15 @@ class HasMany extends Relation
         }
 
         return $this->query->execute();
+    }
+
+    public function create(array $values = [])
+    {
+        $class = $this->foreignModel;
+        $model = new $class($values);
+        $model->{$this->foreignKey} = $this->localModel->{$this->localKey};
+        $model->save();
+
+        return $model;
     }
 }

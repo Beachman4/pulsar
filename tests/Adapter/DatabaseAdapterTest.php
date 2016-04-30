@@ -201,7 +201,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
 
     public function testTotalRecords()
     {
-        $query = new Query('Person');
+        $query = new Query(new Person());
 
         // select query mock
         $scalar = Mockery::mock();
@@ -232,7 +232,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter while getting the number of Person objects');
 
-        $query = new Query('Person');
+        $query = new Query(new Person());
 
         // select query mock
         $db = Mockery::mock();
@@ -249,7 +249,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
 
     public function testQueryModels()
     {
-        $query = new Query('Person');
+        $query = new Query(new Person());
         $query->where('id', 50, '>')
               ->where(['city' => 'Austin'])
               ->where('RAW SQL')
@@ -299,7 +299,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter while performing the Person query');
 
-        $query = new Query('Person');
+        $query = new Query(new Person());
 
         // select query mock
         $db = Mockery::mock('JAQB\Query\SelectQuery[all]');

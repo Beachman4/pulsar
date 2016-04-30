@@ -14,8 +14,7 @@ class BelongsTo extends Relation
 {
     protected function initQuery()
     {
-        $localKey = $this->localKey;
-        $value = $this->relation->$localKey;
+        $value = $this->localModel->{$this->localKey};
 
         if ($value === null) {
             $this->empty = true;
@@ -32,5 +31,17 @@ class BelongsTo extends Relation
         }
 
         return $this->query->first();
+    }
+
+    public function create(array $values = [])
+    {
+        $class = $this->foreignModel;
+        $model = new $class($values);
+        $model->save();
+
+        $this->localModel->{$this->localKey} = $model->{$this->foreignKey};
+        $this->localModel->save();
+
+        return $model;
     }
 }

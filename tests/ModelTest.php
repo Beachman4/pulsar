@@ -59,12 +59,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setAdapter($adapter);
     }
 
-    public function testTablename()
+    public function testGetTablename()
     {
-        $this->assertEquals('TestModels', TestModel::tablename());
+        $model = new TestModel();
+        $this->assertEquals('TestModels', $model->getTablename());
 
         $model = new TestModel2();
-        $this->assertEquals('TestModel2s', $model::tablename());
+        $this->assertEquals('TestModel2s', $model->getTablename());
     }
 
     public function testGetIdProperties()
@@ -1086,10 +1087,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $relation = $model->hasOne('TestModel2');
 
         $this->assertInstanceOf('Pulsar\Relation\HasOne', $relation);
-        $this->assertEquals('TestModel2', $relation->getModel());
+        $this->assertEquals('TestModel2', $relation->getForeignModel());
         $this->assertEquals('test_model_id', $relation->getForeignKey());
         $this->assertEquals('id', $relation->getLocalKey());
-        $this->assertEquals($model, $relation->getRelation());
+        $this->assertEquals($model, $relation->getLocalModel());
     }
 
     public function testBelongsTo()
@@ -1099,10 +1100,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $relation = $model->belongsTo('TestModel2');
 
         $this->assertInstanceOf('Pulsar\Relation\BelongsTo', $relation);
-        $this->assertEquals('TestModel2', $relation->getModel());
+        $this->assertEquals('TestModel2', $relation->getForeignModel());
         $this->assertEquals('id', $relation->getForeignKey());
         $this->assertEquals('test_model2_id', $relation->getLocalKey());
-        $this->assertEquals($model, $relation->getRelation());
+        $this->assertEquals($model, $relation->getLocalModel());
     }
 
     public function testHasMany()
@@ -1112,10 +1113,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $relation = $model->hasMany('TestModel2');
 
         $this->assertInstanceOf('Pulsar\Relation\HasMany', $relation);
-        $this->assertEquals('TestModel2', $relation->getModel());
+        $this->assertEquals('TestModel2', $relation->getForeignModel());
         $this->assertEquals('test_model_id', $relation->getForeignKey());
         $this->assertEquals('id', $relation->getLocalKey());
-        $this->assertEquals($model, $relation->getRelation());
+        $this->assertEquals($model, $relation->getLocalModel());
     }
 
     public function testBelongsToMany()
@@ -1125,10 +1126,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $relation = $model->belongsToMany('TestModel2');
 
         $this->assertInstanceOf('Pulsar\Relation\BelongsToMany', $relation);
-        $this->assertEquals('TestModel2', $relation->getModel());
+        $this->assertEquals('TestModel2', $relation->getForeignModel());
         $this->assertEquals('id', $relation->getForeignKey());
         $this->assertEquals('test_model2_id', $relation->getLocalKey());
-        $this->assertEquals($model, $relation->getRelation());
+        $this->assertEquals($model, $relation->getLocalModel());
+        $this->assertEquals('TestModelTestModel2', $relation->getTablename());
     }
 
     public function testIsRelationship()

@@ -10,18 +10,43 @@
  */
 namespace Pulsar\Relation;
 
+use Pulsar\Model;
+
 class BelongsToMany extends Relation
 {
+    /**
+     * @var string
+     */
+    protected $tablename;
+
+    /**
+     * @param Model  $localModel
+     * @param string $localKey     identifying key on local model
+     * @param string $tablename    pivot table name
+     * @param string $foreignModel foreign model class
+     * @param string $foreignKey   identifying key on foreign model
+     */
+    public function __construct(Model $localModel, $localKey, $tablename, $foreignModel, $foreignKey)
+    {
+        $this->tablename = $tablename;
+
+        parent::__construct($localModel, $localKey, $foreignModel, $foreignKey);
+    }
+
     protected function initQuery()
     {
-        $localKey = $this->localKey;
-        $value = $this->relation->$localKey;
+        $pivot = new Pivot();
+        $pivot->setTablename($this->tablename);
 
-        if ($value === null) {
-            $this->empty = true;
+        $ids = $this->localModel->ids();
+        foreach ($ids as $idProperty => $id) {
+            if ($id === null) {
+                $this->empty = true;
+            }
+
+            $this->query->where($this->localKey, $id);
+            $this->query->join($pivot, $this->foreignKey, $idProperty);
         }
-
-        $this->query->where($this->foreignKey, $value);
     }
 
     public function getResults()
@@ -31,5 +56,41 @@ class BelongsToMany extends Relation
         }
 
         return $this->query->execute();
+    }
+
+    /**
+     * Gets the pivot tablename.
+     *
+     * @return string
+     */
+    public function getTablename()
+    {
+        return $this->tablename;
+    }
+
+    public function create(array $values = [])
+    {
+        $class = $this->foreignModel;
+        $model = new $class($values);
+        $model->save();
+
+        // create pivot relation
+        $pivot = new Pivot();
+        $pivot->setTablename($this->tablename);
+
+        $ids = $model->ids();
+        foreach ($ids as $property => $id) {
+            $pivot->{$this->foreignKey} = $id;
+        }
+
+        $ids = $this->localModel->ids();
+        foreach ($ids as $property => $id) {
+            $pivot->{$this->localKey} = $id;
+        }
+
+        $pivot->save();
+        $model->pivot = $pivot;
+
+        return $model;
     }
 }

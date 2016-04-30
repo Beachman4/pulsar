@@ -10,12 +10,13 @@
  */
 namespace Pulsar\Relation;
 
+use Pulsar\Query;
+
 class HasOne extends Relation
 {
     protected function initQuery()
     {
-        $localKey = $this->localKey;
-        $value = $this->relation->$localKey;
+        $value = $this->localModel->{$this->localKey};
 
         if ($value === null) {
             $this->empty = true;
@@ -32,5 +33,15 @@ class HasOne extends Relation
         }
 
         return $this->query->first();
+    }
+
+    public function create(array $values = [])
+    {
+        $class = $this->foreignModel;
+        $model = new $class($values);
+        $model->{$this->foreignKey} = $this->localModel->{$this->localKey};
+        $model->save();
+
+        return $model;
     }
 }

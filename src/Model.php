@@ -116,6 +116,11 @@ abstract class Model implements \ArrayAccess
     /**
      * @staticvar array
      */
+    private static $tablenames = [];
+
+    /**
+     * @staticvar array
+     */
     private static $accessors = [];
 
     /**
@@ -266,11 +271,16 @@ abstract class Model implements \ArrayAccess
      *
      * @return string
      */
-    public static function tablename()
+    public function getTablename()
     {
-        $inflector = Inflector::get();
+        $name = static::modelName();
+        if (!isset(self::$tablenames[$name])) {
+            $inflector = Inflector::get();
 
-        return $inflector->camelize($inflector->pluralize(static::modelName()));
+            self::$tablenames[$name] = $inflector->camelize($inflector->pluralize($name));
+        }
+
+        return self::$tablenames[$name];
     }
 
     /**
@@ -1094,7 +1104,7 @@ abstract class Model implements \ArrayAccess
      */
     public function hasOne($model, $foreignKey = '', $localKey = '')
     {
-        // the default local key would look like `user_id`
+        // the default foreign key would look like `user_id`
         // for a model named User
         if (!$foreignKey) {
             $inflector = Inflector::get();
@@ -1105,7 +1115,7 @@ abstract class Model implements \ArrayAccess
             $localKey = self::DEFAULT_ID_PROPERTY;
         }
 
-        return new HasOne($model, $foreignKey, $localKey, $this);
+        return new HasOne($this, $localKey, $model, $foreignKey, $localKey);
     }
 
     /**
@@ -1130,7 +1140,7 @@ abstract class Model implements \ArrayAccess
             $localKey = strtolower($inflector->underscore($model::modelName())).'_id';
         }
 
-        return new BelongsTo($model, $foreignKey, $localKey, $this);
+        return new BelongsTo($this, $localKey, $model, $foreignKey);
     }
 
     /**
@@ -1144,7 +1154,7 @@ abstract class Model implements \ArrayAccess
      */
     public function hasMany($model, $foreignKey = '', $localKey = '')
     {
-        // the default local key would look like `user_id`
+        // the default foreign key would look like `user_id`
         // for a model named User
         if (!$foreignKey) {
             $inflector = Inflector::get();
@@ -1155,20 +1165,31 @@ abstract class Model implements \ArrayAccess
             $localKey = self::DEFAULT_ID_PROPERTY;
         }
 
-        return new HasMany($model, $foreignKey, $localKey, $this);
+        return new HasMany($this, $localKey, $model, $foreignKey);
     }
 
     /**
      * Creates the child side of a Many-To-Many relationship.
      *
      * @param string $model      foreign model class
+     * @param string $tablename  pivot table name
      * @param string $foreignKey identifying key on foreign model
      * @param string $localKey   identifying key on local model
      *
      * @return \Pulsar\Relation\Relation
      */
-    public function belongsToMany($model, $foreignKey = '', $localKey = '')
+    public function belongsToMany($model, $tablename = '', $foreignKey = '', $localKey = '')
     {
+        // the default pivot table name looks like
+        // RoleUser for models named Role and User.
+        // the tablename is built from the model names
+        // in alphabetic order.
+        if (!$tablename) {
+            $names = [$this::modelName(), $model::modelName()];
+            sort($names);
+            $tablename = implode($names);
+        }
+
         if (!$foreignKey) {
             $foreignKey = self::DEFAULT_ID_PROPERTY;
         }
@@ -1180,7 +1201,7 @@ abstract class Model implements \ArrayAccess
             $localKey = strtolower($inflector->underscore($model::modelName())).'_id';
         }
 
-        return new BelongsToMany($model, $foreignKey, $localKey, $this);
+        return new BelongsToMany($this, $localKey, $tablename, $model, $foreignKey);
     }
 
     /**

@@ -14,8 +14,9 @@ class QueryTest extends PHPUnit_Framework_TestCase
 {
     public function testGetModel()
     {
-        $query = new Query('TestModel');
-        $this->assertEquals('TestModel', $query->getModel());
+        $model = new TestModel();
+        $query = new Query($model);
+        $this->assertEquals($model, $query->getModel());
     }
 
     public function testLimit()
@@ -75,7 +76,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
 
     public function testExecute()
     {
-        $query = new Query('Person');
+        $query = new Query(new Person());
 
         $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
@@ -114,7 +115,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
 
     public function testExecuteMultipleIds()
     {
-        $query = new Query('TestModel2');
+        $query = new Query(new TestModel2());
 
         $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
@@ -148,7 +149,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
 
     public function testAll()
     {
-        $query = new Query('TestModel');
+        $query = new Query(new TestModel());
 
         $all = $query->all();
         $this->assertInstanceOf('Pulsar\Iterator', $all);
@@ -156,7 +157,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
 
     public function testFirst()
     {
-        $query = new Query('Person');
+        $query = new Query(new Person());
 
         $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 
@@ -183,7 +184,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
 
     public function testFirstLimit()
     {
-        $query = new Query('Person');
+        $query = new Query(new Person());
 
         $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
 

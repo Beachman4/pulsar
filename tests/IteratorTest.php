@@ -48,7 +48,8 @@ class IteratorTest extends PHPUnit_Framework_TestCase
         self::$adapter = $adapter;
         IteratorTestModel::setAdapter(self::$adapter);
 
-        self::$query = new Query('IteratorTestModel');
+        $model = new IteratorTestModel();
+        self::$query = new Query($model);
         self::$query->start(self::$start)
                     ->limit(self::$limit);
         self::$iterator = new Iterator(self::$query);
@@ -185,7 +186,8 @@ class IteratorTest extends PHPUnit_Framework_TestCase
     {
         $start = 0;
         $limit = 101;
-        $query = new Query('IteratorTestModel');
+        $model = new IteratorTestModel();
+        $query = new Query($model);
         $query->limit(101);
         $iterator = new Iterator($query);
 

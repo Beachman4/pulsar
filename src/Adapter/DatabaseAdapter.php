@@ -36,7 +36,7 @@ class DatabaseAdapter implements AdapterInterface
     public function createModel(Model $model, array $parameters)
     {
         $values = $this->serialize($model, $parameters);
-        $tablename = $model::tablename();
+        $tablename = $model->getTablename();
 
         try {
             return $this->app['db']->insert($values)
@@ -69,7 +69,7 @@ class DatabaseAdapter implements AdapterInterface
         }
 
         $values = $this->serialize($model, $parameters);
-        $tablename = $model::tablename();
+        $tablename = $model->getTablename();
 
         try {
             return $this->app['db']->update($tablename)
@@ -85,7 +85,7 @@ class DatabaseAdapter implements AdapterInterface
 
     public function deleteModel(Model $model)
     {
-        $tablename = $model::tablename();
+        $tablename = $model->getTablename();
 
         try {
             return $this->app['db']->delete($tablename)
@@ -100,8 +100,9 @@ class DatabaseAdapter implements AdapterInterface
 
     public function queryModels(Query $query)
     {
-        $model = $query->getModel();
-        $tablename = $model::tablename();
+        $class = $query->getModel();
+        $model = new $class();
+        $tablename = $model->getTablename();
 
         // build a DB query from the model query
         $dbQuery = $this->app['db']
@@ -115,7 +116,10 @@ class DatabaseAdapter implements AdapterInterface
         foreach ($query->getJoins() as $join) {
             list($foreignModel, $column, $foreignKey) = $join;
 
-            $foreignTablename = $foreignModel::tablename();
+            if (is_string($foreignModel)) {
+                $foreignModel = new $foreignModel();
+            }
+            $foreignTablename = $foreignModel->getTablename();
             $condition = $this->prefixColumn($column, $tablename).'='.$this->prefixColumn($foreignKey, $foreignTablename);
 
             $dbQuery->join($foreignTablename, $condition);
@@ -135,7 +139,7 @@ class DatabaseAdapter implements AdapterInterface
     public function totalRecords(Query $query)
     {
         $model = $query->getModel();
-        $tablename = $model::tablename();
+        $tablename = $model->getTablename();
 
         try {
             return (int) $this->app['db']->select('count(*)')

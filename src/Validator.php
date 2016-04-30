@@ -472,7 +472,7 @@ class Validator
         }
         unset($valid['']);
 
-        return !!array_value($valid, $value);
+        return (bool) array_value($valid, $value);
     }
 
     /**
@@ -491,7 +491,7 @@ class Validator
 
         $value = strtotime($value);
 
-        return !!$value;
+        return (bool) $value;
     }
 
     /**

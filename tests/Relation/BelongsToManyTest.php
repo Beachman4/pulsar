@@ -13,39 +13,48 @@ use Pulsar\Relation\BelongsToMany;
 
 class BelongsToManyTest extends PHPUnit_Framework_TestCase
 {
+    public static $adapter;
+
     public static function setUpBeforeClass()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
-
-        $adapter->shouldReceive('queryModels')
-                ->andReturn([['id' => 11], ['id' => 12]]);
-
-        Model::setAdapter($adapter);
+        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        Model::setAdapter(self::$adapter);
     }
 
     public function testInitQuery()
     {
-        $model = new TestModel2();
-        $model->test_model_id = 10;
+        $person = new Person(['id' => 10]);
 
-        $relation = new BelongsToMany('TestModel', 'id', 'test_model_id', $model);
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
 
-        $this->assertEquals(['id' => 10], $relation->getQuery()->getWhere());
+        $this->assertEquals('group_person', $relation->getTablename());
+
+        $query = $relation->getQuery();
+        $this->assertInstanceOf('Group', $query->getModel());
+        $joins = $query->getJoins();
+        $this->assertCount(1, $joins);
+        $this->assertInstanceOf('Pulsar\Relation\Pivot', $joins[0][0]);
+        $this->assertEquals('group_person', $joins[0][0]->getTablename());
+        $this->assertEquals('group_id', $joins[0][1]);
+        $this->assertEquals('id', $joins[0][2]);
+        $this->assertEquals(['person_id' => 10], $query->getWhere());
     }
 
     public function testGetResults()
     {
-        $model = new TestModel2();
-        $model->test_model_id = 10;
+        $person = new Person(['id' => 10]);
 
-        $relation = new BelongsToMany('TestModel', 'id', 'test_model_id', $model);
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
+
+        self::$adapter->shouldReceive('queryModels')
+                      ->andReturn([['id' => 11], ['id' => 12]]);
 
         $result = $relation->getResults();
 
         $this->assertCount(2, $result);
 
         foreach ($result as $m) {
-            $this->assertInstanceOf('TestModel', $m);
+            $this->assertInstanceOf('Group', $m);
         }
 
         $this->assertEquals(11, $result[0]->id());
@@ -54,10 +63,37 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
 
     public function testEmpty()
     {
-        $model = new TestModel2(['test_model_id' => null]);
+        $person = new Person();
 
-        $relation = new BelongsToMany('TestModel', 'id', 'test_model_id', $model);
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
 
         $this->assertNull($relation->getResults());
+    }
+
+    public function testCreate()
+    {
+        $person = new Person(['id' => 2]);
+
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
+
+        self::$adapter->shouldReceive('createModel')
+                      ->andReturn(true);
+
+        self::$adapter->shouldReceive('getCreatedID')
+                     ->andReturn(1);
+
+        $group = $relation->create(['test' => true]);
+
+        $this->assertInstanceOf('Group', $group);
+        $this->assertEquals(true, $group->test);
+        $this->assertTrue($group->persisted());
+
+        // verify pivot
+        $pivot = $group->pivot;
+        $this->assertInstanceOf('Pulsar\Relation\Pivot', $pivot);
+        $this->assertEquals('group_person', $pivot->getTablename());
+        $this->assertEquals(1, $pivot->group_id);
+        $this->assertEquals(2, $pivot->person_id);
+        $this->assertTrue($pivot->persisted());
     }
 }

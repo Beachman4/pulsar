@@ -215,3 +215,19 @@ class CacheableModel extends Model
 
     public static $cacheTTL = 10;
 }
+
+class Post extends Model
+{
+}
+
+class Category extends Model
+{
+}
+
+class Car extends Model
+{
+}
+
+class Balance extends Model
+{
+}

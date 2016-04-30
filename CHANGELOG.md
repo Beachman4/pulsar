@@ -15,7 +15,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - `AdapterException` represents errors that occur in the data layer.
 - Added model adapter service for Infuse Framework.
 - Can check if models are persisted with `persisted()`
-- Added `tablename()` method for custom table names.
+- Added `getTablename()` method for custom table names.
 
 ### Changed
 - Model properties are now determined by the values the specific model instance contains at run-time instead of being pre-defined.
