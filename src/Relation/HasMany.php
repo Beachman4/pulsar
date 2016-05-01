@@ -36,9 +36,9 @@ class HasMany extends Relation
     public function create(array $values = [])
     {
         $class = $this->foreignModel;
-        $model = new $class($values);
+        $model = new $class();
         $model->{$this->foreignKey} = $this->localModel->{$this->localKey};
-        $model->save();
+        $model->create($values);
 
         return $model;
     }

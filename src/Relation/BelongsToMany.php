@@ -71,8 +71,8 @@ class BelongsToMany extends Relation
     public function create(array $values = [])
     {
         $class = $this->foreignModel;
-        $model = new $class($values);
-        $model->save();
+        $model = new $class();
+        $model->create($values);
 
         // create pivot relation
         $pivot = new Pivot();
