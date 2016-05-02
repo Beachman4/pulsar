@@ -56,6 +56,29 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
         $this->assertNull($relation->getResults());
     }
 
+    public function testSave()
+    {
+        $post = new Post(['category_id' => null]);
+
+        $relation = new BelongsTo($post, 'category_id', 'Category', 'id');
+
+        self::$adapter->shouldReceive('createModel')
+                      ->andReturn(true);
+
+        self::$adapter->shouldReceive('getCreatedID')
+                      ->andReturn(1);
+
+        $category = new Category(['test' => true]);
+
+        $this->assertEquals($category, $relation->save($category));
+
+        $this->assertEquals(true, $category->test);
+        $this->assertTrue($category->persisted());
+
+        $this->assertEquals(1, $post->category_id);
+        $this->assertTrue($post->persisted());
+    }
+
     public function testCreate()
     {
         $post = new Post(['category_id' => null]);
@@ -66,7 +89,7 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
                       ->andReturn(true);
 
         self::$adapter->shouldReceive('getCreatedID')
-                     ->andReturn(1);
+                      ->andReturn(1);
 
         $category = $relation->create(['test' => true]);
 

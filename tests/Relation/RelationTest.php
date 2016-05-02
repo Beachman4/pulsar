@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Model;
 use Pulsar\Relation\Relation;
 
 class RelationTest extends PHPUnit_Framework_TestCase
@@ -82,6 +83,11 @@ class DistantRelation extends Relation
     }
 
     public function getResults()
+    {
+        // do nothing
+    }
+
+    public function save(Model $model)
     {
         // do nothing
     }

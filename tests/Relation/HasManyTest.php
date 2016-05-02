@@ -60,6 +60,27 @@ class HasManyTest extends PHPUnit_Framework_TestCase
         $this->assertNull($relation->getResults());
     }
 
+    public function testSave()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
+
+        self::$adapter->shouldReceive('createModel')
+                      ->andReturn(true);
+
+        self::$adapter->shouldReceive('getCreatedID')
+                      ->andReturn(1);
+
+        $car = new Car(['test' => true]);
+
+        $this->assertEquals($car, $relation->save($car));
+
+        $this->assertEquals(100, $car->person_id);
+        $this->assertEquals(true, $car->test);
+        $this->assertTrue($car->persisted());
+    }
+
     public function testCreate()
     {
         $person = new Person(['id' => 100]);
@@ -70,7 +91,7 @@ class HasManyTest extends PHPUnit_Framework_TestCase
                       ->andReturn(true);
 
         self::$adapter->shouldReceive('getCreatedID')
-                     ->andReturn(1);
+                      ->andReturn(1);
 
         $car = $relation->create(['test' => true]);
 

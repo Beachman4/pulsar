@@ -126,7 +126,18 @@ abstract class Relation
     abstract public function getResults();
 
     /**
-     * Creates a new relationship model and attaches it to the owning model.
+     * Saves a new relationship model and attaches it to
+     * the owning model.
+     *
+     * @param Model $model
+     *
+     * @return Model
+     */
+    abstract public function save(Model $model);
+
+    /**
+     * Creates a new relationship model and attaches it to
+     * the owning model.
      *
      * @param array $values
      *

@@ -56,6 +56,27 @@ class HasOneTest extends PHPUnit_Framework_TestCase
         $this->assertNull($relation->getResults());
     }
 
+    public function testSave()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasOne($person, 'id', 'Balance', 'person_id');
+
+        self::$adapter->shouldReceive('createModel')
+                      ->andReturn(true);
+
+        self::$adapter->shouldReceive('getCreatedID')
+                      ->andReturn(1);
+
+        $balance = new Balance(['test' => true]);
+
+        $this->assertEquals($balance, $relation->save($balance));
+
+        $this->assertEquals(100, $balance->person_id);
+        $this->assertEquals(true, $balance->test);
+        $this->assertTrue($balance->persisted());
+    }
+
     public function testCreate()
     {
         $person = new Person(['id' => 100]);
@@ -66,7 +87,7 @@ class HasOneTest extends PHPUnit_Framework_TestCase
                       ->andReturn(true);
 
         self::$adapter->shouldReceive('getCreatedID')
-                     ->andReturn(1);
+                      ->andReturn(1);
 
         $balance = $relation->create(['test' => true]);
 

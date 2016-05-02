@@ -35,6 +35,14 @@ class BelongsTo extends Relation
         return $this->query->first();
     }
 
+    public function save(Model $model)
+    {
+        $model->save();
+        $this->attach($model);
+
+        return $model;
+    }
+
     public function create(array $values = [])
     {
         $class = $this->foreignModel;

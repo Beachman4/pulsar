@@ -70,6 +70,34 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $this->assertNull($relation->getResults());
     }
 
+    public function testSave()
+    {
+        $person = new Person(['id' => 2]);
+
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
+
+        self::$adapter->shouldReceive('createModel')
+                      ->andReturn(true);
+
+        self::$adapter->shouldReceive('getCreatedID')
+                      ->andReturn(1);
+
+        $group = new Group(['test' => true]);
+
+        $this->assertEquals($group, $relation->save($group));
+
+        $this->assertEquals(true, $group->test);
+        $this->assertTrue($group->persisted());
+
+        // verify pivot
+        $pivot = $group->pivot;
+        $this->assertInstanceOf('Pulsar\Relation\Pivot', $pivot);
+        $this->assertEquals('group_person', $pivot->getTablename());
+        $this->assertEquals(1, $pivot->group_id);
+        $this->assertEquals(2, $pivot->person_id);
+        $this->assertTrue($pivot->persisted());
+    }
+
     public function testCreate()
     {
         $person = new Person(['id' => 2]);
@@ -80,7 +108,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
                       ->andReturn(true);
 
         self::$adapter->shouldReceive('getCreatedID')
-                     ->andReturn(1);
+                      ->andReturn(1);
 
         $group = $relation->create(['test' => true]);
 

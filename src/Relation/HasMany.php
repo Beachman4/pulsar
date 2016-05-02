@@ -35,6 +35,14 @@ class HasMany extends Relation
         return $this->query->execute();
     }
 
+    public function save(Model $model)
+    {
+        $model->{$this->foreignKey} = $this->localModel->{$this->localKey};
+        $model->save();
+
+        return $model;
+    }
+
     public function create(array $values = [])
     {
         $class = $this->foreignModel;
