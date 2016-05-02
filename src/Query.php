@@ -281,4 +281,20 @@ class Query
 
         return $models;
     }
+
+    /**
+     * Deletes all of the matched models.
+     *
+     * @return int # of models deleted
+     */
+    public function delete()
+    {
+        $n = 0;
+        foreach ($this->all() as $model) {
+            $model->delete();
+            ++$n;
+        }
+
+        return $n;
+    }
 }
