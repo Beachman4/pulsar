@@ -74,23 +74,56 @@ class BelongsToMany extends Relation
         $model = new $class();
         $model->create($values);
 
+        $this->attach($model);
+
+        return $model;
+    }
+
+    /**
+     * Attaches a model to the relationship by creating
+     * a pivot model.
+     *
+     * @param Model $model
+     *
+     * @return self
+     */
+    public function attach(Model $model)
+    {
         // create pivot relation
         $pivot = new Pivot();
         $pivot->setTablename($this->tablename);
 
-        $ids = $model->ids();
-        foreach ($ids as $property => $id) {
-            $pivot->{$this->foreignKey} = $id;
-        }
-
+        // build the local side
         $ids = $this->localModel->ids();
         foreach ($ids as $property => $id) {
             $pivot->{$this->localKey} = $id;
         }
 
+        // build the foreign side
+        $ids = $model->ids();
+        foreach ($ids as $property => $id) {
+            $pivot->{$this->foreignKey} = $id;
+        }
+
         $pivot->save();
         $model->pivot = $pivot;
 
-        return $model;
+        return $this;
+    }
+
+    /**
+     * Detaches a model from the relationship by deleting
+     * the pivot model.
+     *
+     * @param Model $model
+     *
+     * @return self
+     */
+    public function detach(Model $model)
+    {
+        $model->pivot->delete();
+        unset($model->pivot);
+
+        return $this;
     }
 }

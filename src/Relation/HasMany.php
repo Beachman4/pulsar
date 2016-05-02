@@ -10,6 +10,8 @@
  */
 namespace Pulsar\Relation;
 
+use Pulsar\Model;
+
 class HasMany extends Relation
 {
     protected function initQuery()
@@ -41,5 +43,35 @@ class HasMany extends Relation
         $model->create($values);
 
         return $model;
+    }
+
+    /**
+     * Attaches a child model from this model.
+     *
+     * @param Model $model child model
+     *
+     * @return self
+     */
+    public function attach(Model $model)
+    {
+        $model->{$this->foreignKey} = $this->localModel->{$this->localKey};
+        $model->save();
+
+        return $this;
+    }
+
+    /**
+     * Detaches a child model from this model.
+     *
+     * @param Model $model child model
+     *
+     * @return self
+     */
+    public function detach(Model $model)
+    {
+        $model->{$this->foreignKey} = null;
+        $model->save();
+
+        return $this;
     }
 }

@@ -79,4 +79,31 @@ class HasManyTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $car->test);
         $this->assertTrue($car->persisted());
     }
+
+    public function testAttach()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
+
+        $car = new Car(['person_id' => null]);
+
+        $this->assertEquals($relation, $relation->attach($car));
+
+        $this->assertEquals(100, $car->person_id);
+        $this->assertTrue($car->persisted());
+    }
+
+    public function testDetach()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
+
+        $car = new Car(['person_id' => 100]);
+
+        $this->assertEquals($relation, $relation->detach($car));
+
+        $this->assertNull($car->person_id);
+    }
 }

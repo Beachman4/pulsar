@@ -10,6 +10,8 @@
  */
 namespace Pulsar\Relation;
 
+use Pulsar\Model;
+
 class BelongsTo extends Relation
 {
     protected function initQuery()
@@ -39,9 +41,36 @@ class BelongsTo extends Relation
         $model = new $class();
         $model->create($values);
 
+        $this->attach($model);
+
+        return $model;
+    }
+
+    /**
+     * Attaches this model to an owning model.
+     *
+     * @param Model $model owning model
+     *
+     * @return self
+     */
+    public function attach(Model $model)
+    {
         $this->localModel->{$this->localKey} = $model->{$this->foreignKey};
         $this->localModel->save();
 
-        return $model;
+        return $this;
+    }
+
+    /**
+     * Detaches this model from the owning model.
+     *
+     * @return self
+     */
+    public function detach()
+    {
+        $this->localModel->{$this->localKey} = null;
+        $this->localModel->save();
+
+        return $this;
     }
 }

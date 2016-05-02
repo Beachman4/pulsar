@@ -96,4 +96,35 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(2, $pivot->person_id);
         $this->assertTrue($pivot->persisted());
     }
+
+    public function testAttach()
+    {
+        $person = new Person(['id' => 2]);
+
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
+
+        $group = new Group(['id' => 3]);
+
+        $this->assertEquals($relation, $relation->attach($group));
+
+        $pivot = $group->pivot;
+        $this->assertInstanceOf('Pulsar\Relation\Pivot', $pivot);
+        $this->assertEquals('group_person', $pivot->getTablename());
+        $this->assertEquals(2, $pivot->person_id);
+        $this->assertEquals(3, $pivot->group_id);
+        $this->assertTrue($pivot->persisted());
+    }
+
+    public function testDetach()
+    {
+        $person = new Person(['id' => 2]);
+
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
+
+        $group = new Group(['person_id' => 2]);
+        $group->pivot = Mockery::mock();
+        $group->pivot->shouldReceive('delete')->once();
+
+        $this->assertEquals($relation, $relation->detach($group));
+    }
 }

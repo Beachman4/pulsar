@@ -71,8 +71,34 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
         $category = $relation->create(['test' => true]);
 
         $this->assertInstanceOf('Category', $category);
-        $this->assertEquals(1, $post->category_id);
         $this->assertEquals(true, $category->test);
         $this->assertTrue($category->persisted());
+
+        $this->assertEquals(1, $post->category_id);
+        $this->assertTrue($post->persisted());
+    }
+
+    public function testAttach()
+    {
+        $post = new Post(['category_id' => null]);
+
+        $relation = new BelongsTo($post, 'category_id', 'Category', 'id');
+
+        $category = new Category(['id' => 10]);
+
+        $this->assertEquals($relation, $relation->attach($category));
+        $this->assertEquals(10, $post->category_id);
+        $this->assertTrue($post->persisted());
+    }
+
+    public function testDetach()
+    {
+        $post = new Post(['category_id' => 10]);
+
+        $relation = new BelongsTo($post, 'category_id', 'Category', 'id');
+
+        $this->assertEquals($relation, $relation->detach());
+        $this->assertNull($post->category_id);
+        $this->assertTrue($post->persisted());
     }
 }

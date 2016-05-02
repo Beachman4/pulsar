@@ -75,4 +75,31 @@ class HasOneTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $balance->test);
         $this->assertTrue($balance->persisted());
     }
+
+    public function testAttach()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasOne($person, 'id', 'Balance', 'person_id');
+
+        $balance = new Balance();
+
+        $this->assertEquals($relation, $relation->attach($balance));
+
+        $this->assertEquals(100, $balance->person_id);
+        $this->assertTrue($balance->persisted());
+    }
+
+    public function testDetach()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasOne($person, 'id', 'Balance', 'person_id');
+
+        self::$adapter->shouldReceive('updateModel')
+                      ->andReturn(true)
+                      ->once();
+
+        $this->assertEquals($relation, $relation->detach());
+    }
 }

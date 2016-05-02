@@ -10,7 +10,7 @@
  */
 namespace Pulsar\Relation;
 
-use Pulsar\Query;
+use Pulsar\Model;
 
 class HasOne extends Relation
 {
@@ -43,5 +43,37 @@ class HasOne extends Relation
         $model->create($values);
 
         return $model;
+    }
+
+    /**
+     * Attaches a child model to this model.
+     *
+     * @param Model $model child model
+     *
+     * @return self
+     */
+    public function attach(Model $model)
+    {
+        $model->{$this->foreignKey} = $this->localModel->{$this->localKey};
+        $model->save();
+
+        return $this;
+    }
+
+    /**
+     * Detaches the child model from this model.
+     *
+     * @return self
+     */
+    public function detach()
+    {
+        $model = $this->getResults();
+
+        if ($model) {
+            $model->{$this->foreignKey} = null;
+            $model->save();
+        }
+
+        return $this;
     }
 }
