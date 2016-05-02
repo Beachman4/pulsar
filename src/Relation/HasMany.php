@@ -82,4 +82,28 @@ class HasMany extends Relation
 
         return $this;
     }
+
+    /**
+     * Removes any relationships that are not included
+     * in the list of IDs.
+     * 
+     * @param array $ids
+     *
+     * @return self
+     */
+    public function sync(array $ids)
+    {
+        $class = $this->foreignModel;
+        $model = new $class();
+        $query = $model::query();
+
+        if (count($ids) > 0) {
+            $in = implode(',', $ids);
+            $query->where("{$this->foreignKey} NOT IN ($in)");
+        }
+
+        $query->delete();
+
+        return $this;
+    }
 }

@@ -127,4 +127,32 @@ class HasManyTest extends PHPUnit_Framework_TestCase
 
         $this->assertNull($car->person_id);
     }
+
+    public function testSync()
+    {
+        $person = new Person(['id' => 100]);
+
+        $relation = new HasMany($person, 'id', 'Car', 'person_id');
+
+        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+
+        self::$adapter->shouldReceive('totalRecords')
+                      ->andReturn(3);
+
+        self::$adapter->shouldReceive('queryModels')
+                      ->andReturnUsing(function ($query) {
+                        $this->assertInstanceOf('Car', $query->getModel());
+                        $this->assertEquals(['person_id NOT IN (1,2,3)'], $query->getWhere());
+
+                        return [['id' => 3], ['id' => 4], ['id' => 5]];
+                      });
+
+        self::$adapter->shouldReceive('deleteModel')
+                      ->andReturn(true)
+                      ->times(3);
+
+        Model::setAdapter(self::$adapter);
+
+        $this->assertEquals($relation, $relation->sync([1, 2, 3]));
+    }
 }

@@ -155,4 +155,33 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($relation, $relation->detach($group));
     }
+
+    public function testSync()
+    {
+        $person = new Person(['id' => 2]);
+
+        $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
+
+        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+
+        self::$adapter->shouldReceive('totalRecords')
+                      ->andReturn(3);
+
+        self::$adapter->shouldReceive('queryModels')
+                      ->andReturnUsing(function ($query) {
+                        $this->assertInstanceOf('Pulsar\Relation\Pivot', $query->getModel());
+                        $this->assertEquals('group_person', $query->getModel()->getTablename());
+                        $this->assertEquals(['group_id NOT IN (1,2,3)', 'person_id' => 2], $query->getWhere());
+
+                        return [['id' => 3], ['id' => 4], ['id' => 5]];
+                      });
+
+        self::$adapter->shouldReceive('deleteModel')
+                      ->andReturn(true)
+                      ->times(3);
+
+        Model::setAdapter(self::$adapter);
+
+        $this->assertEquals($relation, $relation->sync([1, 2, 3]));
+    }
 }

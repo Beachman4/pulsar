@@ -11,6 +11,7 @@
 namespace Pulsar\Relation;
 
 use Pulsar\Model;
+use Pulsar\Query;
 
 class BelongsToMany extends Relation
 {
@@ -131,6 +132,35 @@ class BelongsToMany extends Relation
     {
         $model->pivot->delete();
         unset($model->pivot);
+
+        return $this;
+    }
+
+    /**
+     * Removes any relationships that are not included
+     * in the list of IDs.
+     * 
+     * @param array $ids
+     *
+     * @return self
+     */
+    public function sync(array $ids)
+    {
+        $pivot = new Pivot();
+        $pivot->setTablename($this->tablename);
+        $query = new Query($pivot);
+
+        $localIds = $this->localModel->ids();
+        foreach ($localIds as $property => $id) {
+            $query->where($this->localKey, $id);
+        }
+
+        if (count($ids) > 0) {
+            $in = implode(',', $ids);
+            $query->where("{$this->foreignKey} NOT IN ($in)");
+        }
+
+        $query->delete();
 
         return $this;
     }
