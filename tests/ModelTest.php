@@ -132,37 +132,13 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertNull(TestModel::cast(Model::TYPE_STRING, null));
 
         $this->assertEquals('string', TestModel::cast(Model::TYPE_STRING, 'string'));
+    }
 
-        $this->assertEquals(123, TestModel::cast(Model::TYPE_INTEGER, 123));
-        $this->assertEquals(123, TestModel::cast(Model::TYPE_INTEGER, '123'));
-
-        $this->assertEquals(1.23, TestModel::cast(Model::TYPE_FLOAT, 1.23));
-        $this->assertEquals(123.0, TestModel::cast(Model::TYPE_FLOAT, '123'));
-
-        $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, true));
-        $this->assertTrue(TestModel::cast(Model::TYPE_BOOLEAN, '1'));
-        $this->assertFalse(TestModel::cast(Model::TYPE_BOOLEAN, false));
-
-        $date = TestModel::cast(Model::TYPE_DATE, 123);
-        $this->assertInstanceOf('Carbon\Carbon', $date);
-        $this->assertEquals(123, $date->timestamp);
-
-        $date = new Carbon();
-        $this->assertEquals($date, TestModel::cast(Model::TYPE_DATE, $date));
-
+    public function testCastDate()
+    {
         $date = TestModel2::cast(Model::TYPE_DATE, '2016-01-20 00:00:00', 'created_at');
         $this->assertInstanceOf('Carbon\Carbon', $date);
         $this->assertEquals(1453248000, $date->timestamp);
-
-        $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, '{"test":true}'));
-        $this->assertEquals(['test' => true], TestModel::cast(Model::TYPE_ARRAY, ['test' => true]));
-
-        $expected = new stdClass();
-        $expected->test = true;
-        $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, '{"test":true}'));
-        $this->assertEquals($expected, TestModel::cast(Model::TYPE_OBJECT, $expected));
-
-        $this->assertEquals('string', TestModel::cast(null, 'string'));
     }
 
     /////////////////////////////

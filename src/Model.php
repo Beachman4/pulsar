@@ -547,48 +547,15 @@ abstract class Model implements \ArrayAccess
             return;
         }
 
-        switch ($type) {
-        case self::TYPE_STRING:
-            return (string) $value;
+        if ($type == self::TYPE_DATE) {
+            $format = self::getDateFormat($property);
 
-        case self::TYPE_INTEGER:
-            return (int) $value;
-
-        case self::TYPE_FLOAT:
-            return (float) $value;
-
-        case self::TYPE_BOOLEAN:
-            return filter_var($value, FILTER_VALIDATE_BOOLEAN);
-
-        case self::TYPE_DATE:
-            // cast dates into Carbon objects
-            if ($value instanceof Carbon) {
-                return $value;
-            } else {
-                $format = self::getDateFormat($property);
-
-                return Carbon::createFromFormat($format, $value);
-            }
-
-        case self::TYPE_ARRAY:
-            // decode JSON into an array
-            if (is_string($value)) {
-                return json_decode($value, true);
-            } else {
-                return (array) $value;
-            }
-
-        case self::TYPE_OBJECT:
-            // decode JSON into an object
-            if (is_string($value)) {
-                return (object) json_decode($value);
-            } else {
-                return (object) $value;
-            }
-
-        default:
-            return $value;
+            return Property::to_date($value, $format);
         }
+
+        $m = 'to_'.$type;
+
+        return Property::$m($value);
     }
 
     /**
