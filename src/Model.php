@@ -176,6 +176,10 @@ abstract class Model implements \ArrayAccess
         }
     }
 
+    /**
+     * Installs the automatic timestamp properties,
+     * `created_at` and `updated_at`.
+     */
     private function installAutoTimestamps()
     {
         if (property_exists($this, 'casts')) {
@@ -322,7 +326,10 @@ abstract class Model implements \ArrayAccess
 
     public function __get($name)
     {
-        return array_values($this->get([$name]))[0];
+        $value = $this->getValue($name);
+        $this->_ignoreUnsaved = false;
+
+        return $value;
     }
 
     public function __set($name, $value)
@@ -667,61 +674,65 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Gets property values from the model.
+     * Gets a list of property values from the model.
      *
-     * This method looks up values from these locations in this
-     * precedence order (least important to most important):
-     *  1. local values
-     *  2. unsaved values
-     *
-     * @param array $properties list of property names to fetch values of
+     * @param array $properties list of property values to fetch
      *
      * @return array
-     *
-     * @throws InvalidArgumentException when a property was requested not present in the values
      */
     public function get(array $properties)
     {
-        // load the values from the local model cache
-        $values = $this->_values;
-
-        // unless specified, use any unsaved values
-        $ignoreUnsaved = $this->_ignoreUnsaved;
-        $this->_ignoreUnsaved = false;
-        if (!$ignoreUnsaved) {
-            $values = array_replace($values, $this->_unsaved);
-        }
-
-        // build the response
         $result = [];
         foreach ($properties as $k) {
-            $accessor = self::getAccessor($k);
-
-            // use the supplied value if it's available
-            if (array_key_exists($k, $values)) {
-                $result[$k] = $values[$k];
-            // get relationship values
-            } elseif (static::isRelationship($k)) {
-                $result[$k] = $this->loadRelationship($k);
-            // set any missing values to null
-            } elseif ($this->hasProperty($k)) {
-                $result[$k] = $this->_values[$k] = null;
-            // throw an exception for non-properties that do not
-            // have an accessor
-            } elseif (!$accessor) {
-                throw new InvalidArgumentException(static::modelName().' does not have a `'.$k.'` property.');
-            // otherwise the value is considered null
-            } else {
-                $result[$k] = null;
-            }
-
-            // call any accessors
-            if ($accessor) {
-                $result[$k] = $this->$accessor($result[$k]);
-            }
+            $result[$k] = $this->getValue($k);
         }
 
+        $this->_ignoreUnsaved = false;
+
         return $result;
+    }
+
+    /**
+     * Gets a property value from the model.
+     *
+     * Values are looked up in this order:
+     *  1. unsaved values
+     *  2. local values
+     *  3. relationships
+     *
+     * @throws InvalidArgumentException when a property was requested not present in the values
+     *
+     * @return mixed
+     */
+    private function getValue($property)
+    {
+        $value = null;
+        $accessor = self::getAccessor($property);
+
+        // first check for unsaved values
+        if (!$this->_ignoreUnsaved && array_key_exists($property, $this->_unsaved)) {
+            $value = $this->_unsaved[$property];
+
+        // then check the normal value store
+        } elseif (array_key_exists($property, $this->_values)) {
+            $value = $this->_values[$property];
+
+        // get relationship values
+        } elseif (static::isRelationship($property)) {
+            $value = $this->loadRelationship($property);
+
+        // throw an exception for non-properties
+        // that do not have an accessor
+        } elseif ($accessor === false && !in_array($property, static::$ids)) {
+            throw new InvalidArgumentException(static::modelName().' does not have a `'.$property.'` property.');
+        }
+
+        // call any accessors
+        if ($accessor !== false) {
+            return $this->$accessor($value);
+        }
+
+        return $value;
     }
 
     /**

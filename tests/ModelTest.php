@@ -247,6 +247,20 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('some default value', $model->default);
     }
 
+    public function testIgnoreUnsaved()
+    {
+        $model = new TestModel(['test' => true]);
+        $model->test = false;
+
+        // test get values
+        $this->assertTrue($model->ignoreUnsaved()->get(['test'])['test']);
+        $this->assertFalse($model->get(['test'])['test']);
+
+        // test magic getter
+        $this->assertTrue($model->ignoreUnsaved()->test);
+        $this->assertFalse($model->test);
+    }
+
     public function testGetProperties()
     {
         $newModel = new TestModel();
