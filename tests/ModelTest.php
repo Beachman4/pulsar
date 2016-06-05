@@ -237,6 +237,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'answer' => 42,
         ];
 
+        $values = $model->getValues(['id', 'relation', 'answer']);
+        $this->assertEquals($expected, $values);
+
         $values = $model->get(['id', 'relation', 'answer']);
         $this->assertEquals($expected, $values);
     }
@@ -253,8 +256,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->test = false;
 
         // test get values
-        $this->assertTrue($model->ignoreUnsaved()->get(['test'])['test']);
-        $this->assertFalse($model->get(['test'])['test']);
+        $this->assertTrue($model->ignoreUnsaved()->getValues(['test'])['test']);
+        $this->assertFalse($model->getValues(['test'])['test']);
 
         // test magic getter
         $this->assertTrue($model->ignoreUnsaved()->test);

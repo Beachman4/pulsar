@@ -312,7 +312,7 @@ abstract class Model implements \ArrayAccess
      */
     public function ids()
     {
-        return $this->get(static::$ids);
+        return $this->getValues(static::$ids);
     }
 
     /////////////////////////////
@@ -680,7 +680,7 @@ abstract class Model implements \ArrayAccess
      *
      * @return array
      */
-    public function get(array $properties)
+    public function getValues(array $properties)
     {
         $result = [];
         foreach ($properties as $k) {
@@ -690,6 +690,14 @@ abstract class Model implements \ArrayAccess
         $this->_ignoreUnsaved = false;
 
         return $result;
+    }
+
+    /**
+     * @deprecated
+     */
+    public function get(array $properties)
+    {
+        return $this->getValues($properties);
     }
 
     /**
@@ -756,7 +764,7 @@ abstract class Model implements \ArrayAccess
         }
 
         // get the values for the properties
-        $result = $this->get($properties);
+        $result = $this->getValues($properties);
 
         foreach ($result as $k => &$value) {
             // convert any models to arrays
