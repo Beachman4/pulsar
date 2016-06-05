@@ -10,10 +10,33 @@
  */
 namespace Pulsar\Relation;
 
+use ICanBoogie\Inflector;
 use Pulsar\Model;
 
 class BelongsTo extends Relation
 {
+    /**
+     * @param Model  $localModel
+     * @param string $localKey     identifying key on local model
+     * @param string $foreignModel foreign model class
+     * @param string $foreignKey   identifying key on foreign model
+     */
+    public function __construct(Model $localModel, $localKey, $foreignModel, $foreignKey)
+    {
+        if (!$foreignKey) {
+            $foreignKey = Model::DEFAULT_ID_PROPERTY;
+        }
+
+        // the default local key would look like `user_id`
+        // for a model named User
+        if (!$localKey) {
+            $inflector = Inflector::get();
+            $localKey = strtolower($inflector->underscore($foreignModel::modelName())).'_id';
+        }
+
+        parent::__construct($localModel, $localKey, $foreignModel, $foreignKey);
+    }
+
     protected function initQuery()
     {
         $value = $this->localModel->{$this->localKey};

@@ -1104,18 +1104,7 @@ abstract class Model implements \ArrayAccess
      */
     public function hasOne($model, $foreignKey = '', $localKey = '')
     {
-        // the default foreign key would look like `user_id`
-        // for a model named User
-        if (!$foreignKey) {
-            $inflector = Inflector::get();
-            $foreignKey = strtolower($inflector->underscore(static::modelName())).'_id';
-        }
-
-        if (!$localKey) {
-            $localKey = self::DEFAULT_ID_PROPERTY;
-        }
-
-        return new HasOne($this, $localKey, $model, $foreignKey, $localKey);
+        return new HasOne($this, $localKey, $model, $foreignKey);
     }
 
     /**
@@ -1129,17 +1118,6 @@ abstract class Model implements \ArrayAccess
      */
     public function belongsTo($model, $foreignKey = '', $localKey = '')
     {
-        if (!$foreignKey) {
-            $foreignKey = self::DEFAULT_ID_PROPERTY;
-        }
-
-        // the default local key would look like `user_id`
-        // for a model named User
-        if (!$localKey) {
-            $inflector = Inflector::get();
-            $localKey = strtolower($inflector->underscore($model::modelName())).'_id';
-        }
-
         return new BelongsTo($this, $localKey, $model, $foreignKey);
     }
 
@@ -1154,17 +1132,6 @@ abstract class Model implements \ArrayAccess
      */
     public function hasMany($model, $foreignKey = '', $localKey = '')
     {
-        // the default foreign key would look like `user_id`
-        // for a model named User
-        if (!$foreignKey) {
-            $inflector = Inflector::get();
-            $foreignKey = strtolower($inflector->underscore(static::modelName())).'_id';
-        }
-
-        if (!$localKey) {
-            $localKey = self::DEFAULT_ID_PROPERTY;
-        }
-
         return new HasMany($this, $localKey, $model, $foreignKey);
     }
 
@@ -1180,33 +1147,12 @@ abstract class Model implements \ArrayAccess
      */
     public function belongsToMany($model, $tablename = '', $foreignKey = '', $localKey = '')
     {
-        // the default pivot table name looks like
-        // RoleUser for models named Role and User.
-        // the tablename is built from the model names
-        // in alphabetic order.
-        if (!$tablename) {
-            $names = [$this::modelName(), $model::modelName()];
-            sort($names);
-            $tablename = implode($names);
-        }
-
-        if (!$foreignKey) {
-            $foreignKey = self::DEFAULT_ID_PROPERTY;
-        }
-
-        // the default local key would look like `user_id`
-        // for a model named User
-        if (!$localKey) {
-            $inflector = Inflector::get();
-            $localKey = strtolower($inflector->underscore($model::modelName())).'_id';
-        }
-
         return new BelongsToMany($this, $localKey, $tablename, $model, $foreignKey);
     }
 
     /**
-     * Loads a given relationship (if not already) and returns
-     * its results.
+     * Loads a given relationship (if not already) and
+     * returns its results.
      *
      * @param string $name
      *
