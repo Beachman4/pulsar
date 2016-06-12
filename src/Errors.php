@@ -54,21 +54,15 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
     private $model;
 
     /**
-     * @var Locale
+     * @var Locale|null
      */
     private $locale;
 
     /**
-     * @var int
+     * @param Model       $model
+     * @param Locale|null $locale
      */
-    private $pointer = 0;
-
-    /**
-     * @param Model|string $model class name of model
-     *
-     * @var Locale
-     */
-    public function __construct($model = null, Locale $locale = null)
+    public function __construct(Model $model, Locale $locale = null)
     {
         $this->model = $model;
         $this->locale = $locale;
@@ -77,7 +71,7 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
     /**
      * Gets the model instance for these errors.
      *
-     * @return Model|string|null
+     * @return Model
      */
     public function getModel()
     {
@@ -87,7 +81,7 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
     /**
      * Gets the locale instance.
      *
-     * @return Locale
+     * @return Locale|null
      */
     public function getLocale()
     {
@@ -125,7 +119,7 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
     public function all($property = false, $locale = false)
     {
         $errors = $this->stack;
-        if ($property) {
+        if ($property !== false) {
             if (!isset($errors[$property])) {
                 return [];
             }
@@ -175,7 +169,7 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
      * @param string       $error
      * @param string|false $locale
      *
-     * @return array
+     * @return string
      */
     private function parse($property, $error, $locale)
     {

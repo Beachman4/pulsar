@@ -10,6 +10,7 @@
  */
 namespace Pulsar;
 
+use ArrayAccess;
 use BadMethodCallException;
 use Carbon\Carbon;
 use ICanBoogie\Inflector;
@@ -25,7 +26,7 @@ use Pulsar\Relation\HasMany;
 use Pulsar\Relation\BelongsToMany;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-abstract class Model implements \ArrayAccess
+abstract class Model implements ArrayAccess
 {
     const TYPE_STRING = 'string';
     const TYPE_INTEGER = 'integer';
@@ -820,8 +821,7 @@ abstract class Model implements \ArrayAccess
         $this->_unsaved = array_replace($this->_values, $this->_unsaved);
 
         // dispatch the model.creating event
-        $event = $this->dispatch(ModelEvent::CREATING);
-        if ($event->isPropagationStopped()) {
+        if (!$this->dispatch(ModelEvent::CREATING)) {
             return false;
         }
 
@@ -830,7 +830,7 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // create the model using the adapter
+        // persist the model in the data layer
         if (!self::getAdapter()->createModel($this, $this->_unsaved)) {
             return false;
         }
@@ -842,9 +842,7 @@ abstract class Model implements \ArrayAccess
         $this->refreshWith($newValues);
 
         // dispatch the model.created event
-        $event = $this->dispatch(ModelEvent::CREATED);
-
-        return !$event->isPropagationStopped();
+        return $this->dispatch(ModelEvent::CREATED);
     }
 
     /**
@@ -892,8 +890,7 @@ abstract class Model implements \ArrayAccess
         }
 
         // dispatch the model.updating event
-        $event = $this->dispatch(ModelEvent::UPDATING);
-        if ($event->isPropagationStopped()) {
+        if (!$this->dispatch(ModelEvent::UPDATING)) {
             return false;
         }
 
@@ -902,7 +899,7 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // update the model using the adapter
+        // persist the model in the data layer
         if (!self::getAdapter()->updateModel($this, $this->_unsaved)) {
             return false;
         }
@@ -911,9 +908,7 @@ abstract class Model implements \ArrayAccess
         $this->refreshWith($this->_unsaved);
 
         // dispatch the model.updated event
-        $event = $this->dispatch(ModelEvent::UPDATED);
-
-        return !$event->isPropagationStopped();
+        return $this->dispatch(ModelEvent::UPDATED);
     }
 
     /**
@@ -928,24 +923,23 @@ abstract class Model implements \ArrayAccess
         }
 
         // dispatch the model.deleting event
-        $event = $this->dispatch(ModelEvent::DELETING);
-        if ($event->isPropagationStopped()) {
+        if (!$this->dispatch(ModelEvent::DELETING)) {
             return false;
         }
 
-        $deleted = self::getAdapter()->deleteModel($this);
-
-        if ($deleted) {
-            // dispatch the model.deleted event
-            $event = $this->dispatch(ModelEvent::DELETED);
-            if ($event->isPropagationStopped()) {
-                return false;
-            }
-
-            $this->_persisted = false;
+        // delete the model in the data layer
+        if (!self::getAdapter()->deleteModel($this)) {
+            return false;
         }
 
-        return $deleted;
+        // dispatch the model.deleted event
+        if (!$this->dispatch(ModelEvent::DELETED)) {
+            return false;
+        }
+
+        $this->_persisted = false;
+
+        return true;
     }
 
     /**
@@ -1256,13 +1250,15 @@ abstract class Model implements \ArrayAccess
      *
      * @param string $eventName
      *
-     * @return ModelEvent
+     * @return bool true when the event propagated fully without being stopped
      */
     protected function dispatch($eventName)
     {
         $event = new ModelEvent($this);
 
-        return static::getDispatcher()->dispatch($eventName, $event);
+        static::getDispatcher()->dispatch($eventName, $event);
+
+        return !$event->isPropagationStopped();
     }
 
     /////////////////////////////

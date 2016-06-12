@@ -14,84 +14,83 @@ use Pulsar\Errors;
 class ErrorsTest extends PHPUnit_Framework_TestCase
 {
     public static $locale;
-    public static $errors;
 
     public static function setUpBeforeClass()
     {
         self::$locale = new Locale();
         self::$locale->setLocaleDataDir(__DIR__.'/locales');
-        self::$errors = new Errors('Person', self::$locale);
     }
 
     public function testGetModel()
     {
-        $errors = new Errors('Person');
-        $this->assertEquals('Person', $errors->getModel());
+        $person = new Person();
+        $errors = new Errors($person);
+        $this->assertEquals($person, $errors->getModel());
     }
 
     public function testGetLocale()
     {
-        $errors = new Errors('Person', self::$locale);
+        $errors = $this->getErrors();
         $this->assertEquals(self::$locale, $errors->getLocale());
 
-        $errors = new Errors();
+        $errors = new Errors(new Person());
         $this->assertNull($errors->getLocale());
     }
 
     public function testAdd()
     {
-        $this->assertEquals(self::$errors, self::$errors->add('property', 'Something is wrong'));
-
-        $this->assertEquals(self::$errors, self::$errors->add('username', 'pulsar.validation.invalid'));
-
-        $this->assertEquals(self::$errors, self::$errors->add('property', 'some_error'));
+        $errors = $this->getErrors();
+        $this->assertEquals($errors, $errors->add('property', 'Something is wrong'));
+        $this->assertEquals($errors, $errors->add('username', 'pulsar.validation.invalid'));
+        $this->assertEquals($errors, $errors->add('property', 'some_error'));
     }
 
-    /**
-     * @depends testAdd
-     */
     public function testAll()
     {
+        $errors = $this->getErrors();
+        $errors->add('property', 'Something is wrong')
+               ->add('username', 'pulsar.validation.invalid')
+               ->add('property', 'some_error');
+
         $expected = [
             'Something is wrong',
             'some_error',
             'Username is invalid',
         ];
 
-        $messages = self::$errors->all();
+        $messages = $errors->all();
         $this->assertEquals(3, count($messages));
         $this->assertEquals($expected, $messages);
 
         $expected = ['Username is invalid'];
     }
 
-    /**
-     * @depends testAdd
-     */
     public function testHas()
     {
-        $this->assertTrue(self::$errors->has('username'));
-        $this->assertFalse(self::$errors->has('non-existent'));
+        $errors = $this->getErrors();
+        $errors->add('username', 'pulsar.validation.invalid');
+        $this->assertTrue($errors->has('username'));
+        $this->assertFalse($errors->has('non-existent'));
     }
 
-    /**
-     * @depends testAll
-     */
     public function testClear()
     {
-        $this->assertEquals(self::$errors, self::$errors->clear());
-        $this->assertCount(0, self::$errors->all());
+        $errors = $this->getErrors();
+        $errors->add('test', 'test');
+        $this->assertEquals($errors, $errors->clear());
+        $this->assertCount(0, $errors->all());
     }
 
     public function testIterator()
     {
-        self::$errors->clear();
+        $errors = $this->getErrors();
+
         for ($i = 1; $i <= 5; ++$i) {
-            self::$errors->add('property', $i);
+            $errors->add('property', $i);
         }
 
         $result = [];
-        foreach (self::$errors as $k => $v) {
+        foreach ($errors as $k => $v) {
             $result[$k] = $v;
         }
 
@@ -100,30 +99,34 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
 
     public function testCount()
     {
-        self::$errors->clear()->add('property', 'Test');
-        $this->assertCount(1, self::$errors);
+        $errors = $this->getErrors();
+        $errors->add('property', 'Test');
+        $this->assertCount(1, $errors);
     }
 
     public function testArrayAccess()
     {
-        self::$errors->clear();
+        $errors = $this->getErrors();
 
-        self::$errors['property'] = 'test';
-        $this->assertTrue(isset(self::$errors['property']));
-        $this->assertFalse(isset(self::$errors['notset']));
+        $errors['property'] = 'test';
+        $this->assertTrue(isset($errors['property']));
+        $this->assertFalse(isset($errors['notset']));
 
-        $this->assertEquals(['test'], self::$errors['property']);
-        unset(self::$errors['property']);
-        $this->assertFalse(isset(self::$errors['property']));
+        $this->assertEquals(['test'], $errors['property']);
+        unset($errors['property']);
+        $this->assertFalse(isset($errors['property']));
     }
 
     public function testArrayGetFail()
     {
-        $this->assertEquals([], self::$errors['invalid']);
+        $errors = $this->getErrors();
+        $this->assertEquals([], $errors['invalid']);
     }
 
     public function testDefaultMessages()
     {
+        $errors = $this->getErrors();
+
         $messages = [
             'pulsar.validation.alpha' => 'Property only allows letters',
             'pulsar.validation.alpha_numeric' => 'Property only allows letters and numbers',
@@ -147,9 +150,16 @@ class ErrorsTest extends PHPUnit_Framework_TestCase
         ];
 
         foreach ($messages as $error => $message) {
-            self::$errors->clear();
-            self::$errors['property'] = $error;
-            $this->assertEquals([$message], self::$errors['property']);
+            $errors->clear();
+            $errors['property'] = $error;
+            $this->assertEquals([$message], $errors['property']);
         }
+    }
+
+    private function getErrors()
+    {
+        $person = new Person();
+
+        return new Errors($person, self::$locale);
     }
 }

@@ -221,7 +221,7 @@ class DatabaseAdapter implements AdapterInterface
     /**
      * Returns a prefixed where statement.
      *
-     * @param string $columns
+     * @param array  $where
      * @param string $tablename
      *
      * @return string
@@ -249,7 +249,7 @@ class DatabaseAdapter implements AdapterInterface
     /**
      * Returns a prefixed sort statement.
      *
-     * @param string $columns
+     * @param array  $sort
      * @param string $tablename
      *
      * @return string

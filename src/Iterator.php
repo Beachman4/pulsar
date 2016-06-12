@@ -152,7 +152,7 @@ class Iterator implements \Iterator, \Countable, \ArrayAccess
     {
         $this->updateCount();
 
-        return $this->count;
+        return (int) $this->count;
     }
 
     //////////////////////////
@@ -229,7 +229,7 @@ class Iterator implements \Iterator, \Countable, \ArrayAccess
         // This calculation is based on the assumption that
         // the first N (count - count') models are deleted.
         if ($this->count != 0 && $newCount < $this->count) {
-            $this->pointer = max(0, $this->pointer - ($this->count - $newCount));
+            $this->pointer = (int) max(0, $this->pointer - ($this->count - $newCount));
         }
 
         // If the count has increased then the pointer is still
@@ -242,9 +242,11 @@ class Iterator implements \Iterator, \Countable, \ArrayAccess
      *
      * @param int $pointer
      * @param int $limit
+     *
+     * @return int
      */
     private function rangeStart($pointer, $limit)
     {
-        return floor($pointer / $limit) * $limit;
+        return (int) floor($pointer / $limit) * $limit;
     }
 }

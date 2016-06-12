@@ -40,13 +40,13 @@ class HasMany extends Relation
     protected function initQuery()
     {
         $localKey = $this->localKey;
-        $value = $this->localModel->$localKey;
+        $id = $this->localModel->$localKey;
 
-        if ($value === null) {
+        if ($id === null) {
             $this->empty = true;
         }
 
-        $this->query->where($this->foreignKey, $value);
+        $this->query->where($this->foreignKey, $id);
     }
 
     public function getResults()

@@ -39,13 +39,13 @@ class HasOne extends Relation
 
     protected function initQuery()
     {
-        $value = $this->localModel->{$this->localKey};
+        $id = $this->localModel->{$this->localKey};
 
-        if ($value === null) {
+        if ($id === null) {
             $this->empty = true;
         }
 
-        $this->query->where($this->foreignKey, $value)
+        $this->query->where($this->foreignKey, $id)
                     ->limit(1);
     }
 

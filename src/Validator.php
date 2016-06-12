@@ -56,8 +56,8 @@ class Validator
     }
 
     /**
-     * @var array
-     * @var Errors
+     * @param array       $rules
+     * @param Errors|null $errors
      */
     public function __construct(array $rules, Errors $errors = null)
     {
@@ -120,7 +120,7 @@ class Validator
      * of parameters to be specified. This example would generate 
      * [['numeric', []], ['range', [10, 30]]].
      *
-     * @param string $rules
+     * @param string $str rules string
      *
      * @return array
      */
@@ -138,7 +138,7 @@ class Validator
             // [1] = optional method parameters
             $parameters = isset($exp[1]) ? explode(',', $exp[1]) : [];
 
-            $rules[] = [$exp[0], $parameters];
+            $rules[] = [$method, $parameters];
         }
 
         return $rules;
@@ -254,12 +254,11 @@ class Validator
     /**
      * Validates an e-mail address.
      *
-     * @param string $email      e-mail address
-     * @param array  $parameters parameters for validation
+     * @param string $value e-mail address
      *
      * @return bool success
      */
-    private function email(&$value, array $parameters)
+    private function email(&$value)
     {
         $value = trim(strtolower($value));
 
@@ -288,7 +287,7 @@ class Validator
      */
     private function date($value)
     {
-        return strtotime($value);
+        return strtotime($value) !== false;
     }
 
     /**
@@ -500,7 +499,6 @@ class Validator
      * @param mixed  $value
      * @param array  $parameters
      * @param string $name
-     * @param Model  $model
      *
      * @return bool
      */

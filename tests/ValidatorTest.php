@@ -51,7 +51,8 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
             'test2' => 'alpha_numeric',
         ];
 
-        $errors = new Errors();
+        $person = new Person();
+        $errors = new Errors($person);
         $validator = new Validator($rules, $errors);
 
         $this->assertFalse($validator->validate($data));
