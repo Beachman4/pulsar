@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+
 namespace Pulsar;
 
 use ArrayAccess;
@@ -1220,6 +1221,30 @@ abstract class Model implements ArrayAccess
      */
     public static function updated(callable $listener, $priority = 0)
     {
+        static::listen(ModelEvent::UPDATED, $listener, $priority);
+    }
+
+    /**
+     * Adds a listener to the model.creating and model.updating events.
+     *
+     * @param callable $listener
+     * @param int      $priority
+     */
+    public static function saving(callable $listener, $priority = 0)
+    {
+        static::listen(ModelEvent::CREATING, $listener, $priority);
+        static::listen(ModelEvent::UPDATING, $listener, $priority);
+    }
+
+    /**
+     * Adds a listener to the model.created and model.updated events.
+     *
+     * @param callable $listener
+     * @param int      $priority
+     */
+    public static function saved(callable $listener, $priority = 0)
+    {
+        static::listen(ModelEvent::CREATED, $listener, $priority);
         static::listen(ModelEvent::UPDATED, $listener, $priority);
     }
 

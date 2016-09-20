@@ -604,6 +604,36 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($newModel->create());
     }
 
+    public function testCreateSavingListenerFail()
+    {
+        TestModel::saving(function (ModelEvent $event) {
+            $event->stopPropagation();
+        });
+
+        $newModel = new TestModel();
+        $this->assertFalse($newModel->create());
+    }
+
+    public function testCreateSavedListenerFail()
+    {
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+
+        $adapter->shouldReceive('createModel')
+                ->andReturn(true);
+
+        $adapter->shouldReceive('getCreatedID')
+                ->andReturn(1);
+
+        Model::setAdapter($adapter);
+
+        TestModel::saved(function (ModelEvent $event) {
+            $event->stopPropagation();
+        });
+
+        $newModel = new TestModel();
+        $this->assertFalse($newModel->create());
+    }
+
     public function testCreateNotUnique()
     {
         $query = TestModel2::query();
@@ -810,6 +840,37 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setAdapter($adapter);
 
         TestModel::updated(function (ModelEvent $event) {
+            $event->stopPropagation();
+        });
+
+        $model = new TestModel();
+        $model->refreshWith(['id' => 100]);
+        $model->answer = 42;
+        $this->assertFalse($model->set());
+    }
+
+    public function testUpdateSavingListenerFail()
+    {
+        TestModel::saving(function (ModelEvent $event) {
+            $event->stopPropagation();
+        });
+
+        $model = new TestModel();
+        $model->refreshWith(['id' => 100]);
+        $model->answer = 42;
+        $this->assertFalse($model->set());
+    }
+
+    public function testUpdateSavedListenerFail()
+    {
+        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+
+        $adapter->shouldReceive('updateModel')
+                ->andReturn(true);
+
+        Model::setAdapter($adapter);
+
+        TestModel::saved(function (ModelEvent $event) {
             $event->stopPropagation();
         });
 
