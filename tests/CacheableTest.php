@@ -8,20 +8,25 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
-use Stash\Pool;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 require_once 'tests/test_models.php';
 
-class CacheablelTest extends PHPUnit_Framework_TestCase
+class CacheableTest extends PHPUnit_Framework_TestCase
 {
     protected function tearDown()
     {
-        CacheableModel::setCachePool(null);
+        CacheableModel::clearCachePool();
+    }
+
+    private function getCache()
+    {
+        return new ArrayAdapter();
     }
 
     public function testGetCachePool()
     {
-        $cache = Mockery::mock('Stash\Pool');
+        $cache = $this->getCache();
 
         CacheableModel::setCachePool($cache);
         for ($i = 0; $i < 5; ++$i) {
@@ -32,7 +37,7 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
 
     public function testNoPool()
     {
-        CacheableModel::setCachePool(null);
+        CacheableModel::clearCachePool();
         $model = new CacheableModel();
         $model->refreshWith(['id' => 5]);
         $this->assertNull($model->getCachePool());
@@ -50,30 +55,30 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
     {
         $model = new CacheableModel();
         $model->refreshWith(['id' => 5]);
-        $this->assertEquals('models/cacheablemodel/5', $model->getCacheKey());
+        $this->assertEquals('models.cacheablemodel.5', $model->getCacheKey());
     }
 
     public function testGetCacheItem()
     {
-        $cache = new Pool();
+        $cache = $this->getCache();
         CacheableModel::setCachePool($cache);
 
         $model = new CacheableModel();
         $model->refreshWith(['id' => 5]);
         $item = $model->getCacheItem();
-        $this->assertInstanceOf('Stash\Item', $item);
-        $this->assertEquals('models/cacheablemodel/5', $item->getKey());
+        $this->assertInstanceOf('Psr\Cache\CacheItemInterface', $item);
+        $this->assertEquals('models.cacheablemodel.5', $item->getKey());
 
         $model = new CacheableModel();
         $model->refreshWith(['id' => 6]);
         $item = $model->getCacheItem();
-        $this->assertInstanceOf('Stash\Item', $item);
-        $this->assertEquals('models/cacheablemodel/6', $item->getKey());
+        $this->assertInstanceOf('Psr\Cache\CacheItemInterface', $item);
+        $this->assertEquals('models.cacheablemodel.6', $item->getKey());
     }
 
     public function testFind()
     {
-        $cache = new Pool();
+        $cache = $this->getCache();
         CacheableModel::setCachePool($cache);
 
         $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
@@ -93,7 +98,7 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
         // value should now be cached
         $item = $cache->getItem($model->getCacheKey());
         $value = $item->get();
-        $this->assertFalse($item->isMiss());
+        $this->assertTrue($item->isHit());
         $expected = ['id' => 100, 'answer' => 42];
         $this->assertEquals($expected, $value);
 
@@ -106,7 +111,7 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
 
     public function testCache()
     {
-        $cache = new Pool();
+        $cache = $this->getCache();
         CacheableModel::setCachePool($cache);
 
         $model = new CacheableModel(['id' => 102, 'answer' => 42]);
@@ -115,11 +120,12 @@ class CacheablelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($model, $model->cache());
         $item = $cache->getItem($model->getCacheKey());
         $value = $item->get();
-        $this->assertFalse($item->isMiss());
+        $this->assertTrue($item->isHit());
 
         // clear the cache
         $this->assertEquals($model, $model->clearCache());
+        $item = $cache->getItem($model->getCacheKey());
         $value = $item->get();
-        $this->assertTrue($item->isMiss());
+        $this->assertFalse($item->isHit());
     }
 }

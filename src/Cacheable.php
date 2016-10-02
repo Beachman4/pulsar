@@ -8,14 +8,16 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+
 namespace Pulsar;
 
-use Stash\Item;
+use Psr\Cache\CacheItemInterface;
+use Psr\Cache\CacheItemPoolInterface;
 
 trait Cacheable
 {
     /**
-     * @staticvar \Stash\Pool
+     * @staticvar CacheItemPoolInterface
      */
     private static $cachePool;
 
@@ -25,9 +27,37 @@ trait Cacheable
     private static $cachePrefix = [];
 
     /**
-     * @var \Stash\Item
+     * @var CacheItemInterface
      */
     private $_cacheItem;
+
+    /**
+     * Sets the default cache instance for all models.
+     *
+     * @param CacheItemPoolInterface $pool
+     */
+    public static function setCachePool(CacheItemPoolInterface $pool)
+    {
+        self::$cachePool = $pool;
+    }
+
+    /**
+     * Clears the default cache instance for all models.
+     */
+    public static function clearCachePool()
+    {
+        self::$cachePool = null;
+    }
+
+    /**
+     * Returns the cache instance.
+     *
+     * @return CacheItemPoolInterface|null
+     */
+    public function getCachePool()
+    {
+        return self::$cachePool;
+    }
 
     public static function find($id)
     {
@@ -38,7 +68,7 @@ trait Cacheable
             $item = $model->getCacheItem();
             $values = $item->get();
 
-            if (!$item->isMiss()) {
+            if ($item->isHit()) {
                 // load the values directly instead of using
                 // refreshWith() to prevent triggering another
                 // cache call
@@ -47,21 +77,6 @@ trait Cacheable
 
                 return $model;
             }
-
-            // If the cache was a miss, then lock down the
-            // cache item, attempt to load the model from
-            // the database, and then update the cache.
-            // Stash calls this Stampede Protection.
-
-            // NOTE Currently disabling Stampede Protection
-            // because there is no way to unlock the item
-            // if we fail to load the model, whether
-            // due to a DB failure or non-existent record.
-            // This is problematic with the Redis driver
-            // because it will attempt to unlock the cache
-            // item once the script shuts down and the
-            // redis connection has closed.
-            // $item->lock();
         }
 
         return parent::find($id);
@@ -80,30 +95,11 @@ trait Cacheable
     public function clearCache()
     {
         if (self::$cachePool) {
-            $this->getCacheItem()->clear();
+            $k = $this->getCacheKey();
+            self::$cachePool->deleteItem($k);
         }
 
         return $this;
-    }
-
-    /**
-     * Sets the default cache instance used by new models.
-     *
-     * @param \Stash\Pool $pool
-     */
-    public static function setCachePool($pool)
-    {
-        self::$cachePool = $pool;
-    }
-
-    /**
-     * Returns the cache instance.
-     *
-     * @return \Stash\Pool|false
-     */
-    public function getCachePool()
-    {
-        return self::$cachePool;
     }
 
     /**
@@ -125,16 +121,16 @@ trait Cacheable
     {
         $k = get_called_class();
         if (!isset(self::$cachePrefix[$k])) {
-            self::$cachePrefix[$k] = 'models/'.strtolower(static::modelName());
+            self::$cachePrefix[$k] = 'models.'.strtolower(static::modelName());
         }
 
-        return self::$cachePrefix[$k].'/'.$this->id();
+        return self::$cachePrefix[$k].'.'.$this->id();
     }
 
     /**
      * Returns the cache item for this model.
      *
-     * @return \Stash\Item|null
+     * @return CacheItemInterface|null
      */
     public function getCacheItem()
     {
@@ -143,7 +139,8 @@ trait Cacheable
         }
 
         if (!$this->_cacheItem) {
-            $this->_cacheItem = self::$cachePool->getItem($this->getCacheKey());
+            $k = $this->getCacheKey();
+            $this->_cacheItem = self::$cachePool->getItem($k);
         }
 
         return $this->_cacheItem;
@@ -161,8 +158,11 @@ trait Cacheable
         }
 
         // cache the local properties
-        $this->getCacheItem()
-             ->set($this->_values, $this->getCacheTTL());
+        $item = $this->getCacheItem();
+        $item->set($this->_values)
+             ->expiresAfter($this->getCacheTTL());
+
+        self::$cachePool->save($item);
 
         return $this;
     }

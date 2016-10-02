@@ -24,12 +24,13 @@
 		"symfony/event-dispatcher": "~2.8|~3.0",
 		"jaqb/jaqb": "~1.2",
 		"infuse/libs": "~0.6",
-		"nesbot/carbon": "~1.21"
+		"nesbot/carbon": "~1.21",
+		"psr/cache": "~1.0"
 	},
 	"require-dev": {
 		"satooshi/php-coveralls": "1.0.0",
 		"mockery/mockery": "~0.9",
-		"tedivm/stash": "0.12.*",
+		"symfony/cache": "~3.1",
 		"infuse/infuse": "~1.4"
 	}
 }

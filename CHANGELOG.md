@@ -38,6 +38,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Auto timestamps, `created_at` and `updated_at` are generated in the model layer instead of by the data layer.
 - Support custom date formats in the data layer, in addition to the default UNIX timestamp. Can be specified per-property with `::$dates`.
 - Support Symfony 3.
+- Use PSR-6 in `Cacheable` trait.
 
 ### Removed
 - Removed `toArrayDeprecated()`.
