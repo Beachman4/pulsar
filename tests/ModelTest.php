@@ -514,24 +514,33 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('createModel')
-                ->withArgs([$newModel, [
-                    'id' => 1,
-                    'id2' => 2,
-                    'required' => true,
-                    'validate' => 'shouldtrimws@example.com',
-                    'default' => 'some default value',
-                    'hidden' => false,
-                    'array' => [
-                        'tax' => '%',
-                        'discounts' => false,
-                        'shipping' => false,
-                    ],
-                    'object' => $object,
-                    'person_id' => 20,
-                    'created_at' => Carbon::now(),
-                    'updated_at' => Carbon::now(),
-                 ]])
-                ->andReturn(true)
+                ->andReturnUsing(function ($model, $args) use ($newModel, $object) {
+                    $this->assertEquals($newModel, $model);
+
+                    $this->assertTrue(isset($args['created_at']));
+                    $this->assertTrue(isset($args['updated_at']));
+                    unset($args['updated_at']);
+                    unset($args['created_at']);
+
+                    $expected = [
+                        'id' => 1,
+                        'id2' => 2,
+                        'required' => true,
+                        'validate' => 'shouldtrimws@example.com',
+                        'default' => 'some default value',
+                        'hidden' => false,
+                        'array' => [
+                            'tax' => '%',
+                            'discounts' => false,
+                            'shipping' => false,
+                        ],
+                        'object' => $object,
+                        'person_id' => 20,
+                     ];
+                    $this->assertEquals($expected, $args);
+
+                    return true;
+                })
                 ->once();
 
         Model::setAdapter($adapter);
