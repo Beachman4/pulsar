@@ -262,11 +262,18 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('test', $model->accessor);
     }
 
+    public function testGetNonExistingUnsaved()
+    {
+        $model = new TestModel();
+        $model->nonexistent_property;
+    }
+
     public function testGetNonExisting()
     {
         $this->setExpectedException(InvalidArgumentException::class);
 
         $model = new TestModel();
+        $model->refreshWith([]); // marks model as persisted
         $model->nonexistent_property;
     }
 

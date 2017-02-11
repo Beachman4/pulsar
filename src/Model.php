@@ -886,8 +886,8 @@ abstract class Model implements ArrayAccess
             $value = $this->loadRelationship($property);
 
         // throw an exception for non-properties
-        // that do not have an accessor
-        } elseif ($accessor === false && !in_array($property, static::$ids)) {
+        // that do not have an accessor, if the model is saved
+        } elseif ($accessor === false && $this->_persisted && !in_array($property, static::$ids)) {
             throw new InvalidArgumentException(static::modelName().' does not have a `'.$property.'` property.');
         }
 
