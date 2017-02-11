@@ -1211,6 +1211,17 @@ abstract class Model implements ArrayAccess
         return self::getAdapter()->totalRecords($query);
     }
 
+    /**
+     * @deprecated
+     * Checks if the model exists in the database
+     *
+     * @return bool
+     */
+    public function exists()
+    {
+        return static::totalRecords($this->ids()) == 1;
+    }
+
     /////////////////////////////
     // Relationships
     /////////////////////////////

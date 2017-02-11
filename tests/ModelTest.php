@@ -1188,6 +1188,30 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($model->persisted());
     }
 
+    public function testExistsDeprecated()
+    {
+        $adapter = Mockery::mock(AdapterInterface::class);
+        $adapter->shouldReceive('totalRecords')
+                ->andReturn(1);
+
+        TestModel2::setDriver($adapter);
+
+        $model = new TestModel2(['id' => 12]);
+        $this->assertTrue($model->exists());
+    }
+
+    public function testNotExistsDeprecated()
+    {
+        $adapter = Mockery::mock(AdapterInterface::class);
+        $adapter->shouldReceive('totalRecords')
+                ->andReturn(0);
+
+        TestModel2::setDriver($adapter);
+
+        $model = new TestModel2(['id' => 12]);
+        $this->assertFalse($model->exists());
+    }
+
     /////////////////////////////
     // Relationships
     /////////////////////////////

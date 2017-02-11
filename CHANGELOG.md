@@ -40,11 +40,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Support Symfony 3.
 - Use PSR-6 in `Cacheable` trait.
 - Deprecated `relation()`.
+- Deprecated `exists()`.
 
 ### Removed
 - Removed `toArrayDeprecated()`.
 - Removed deprecated hooks for create, update, and delete operations.
-- Removed `exists()`.
 - Removed `Validate::is()`.
 - Removed default property values. Can instead override the constructor to implement default values.
 - Removed `db_timestamp` validation rule.
