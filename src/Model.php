@@ -239,6 +239,10 @@ abstract class Model implements ArrayAccess
 
             // parse validations
             $validation = [];
+            if (isset($definition['null'])) {
+                $validation[] = 'skip_empty';
+            }
+
             if (isset($definition['required'])) {
                 $validation[] = 'required';
             }

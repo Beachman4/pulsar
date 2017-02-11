@@ -177,8 +177,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Y-m-d H:i:s', TestModelDeprecated::getDateFormat('updated_at'));
 
         // check validations
-        $this->assertEquals('email', TestModelDeprecated::$validations['validate']);
-        $this->assertEquals('validate', TestModelDeprecated::$validations['validate2']);
+        $this->assertEquals('skip_empty|email', TestModelDeprecated::$validations['validate']);
+        $this->assertEquals('skip_empty|validate', TestModelDeprecated::$validations['validate2']);
         $this->assertEquals('unique', TestModelDeprecated::$validations['unique']);
         $this->assertEquals('required', TestModelDeprecated::$validations['required']);
 
