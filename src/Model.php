@@ -162,7 +162,9 @@ abstract class Model implements ArrayAccess
     {
         // parse deprecated property definitions
         if (property_exists($this, 'properties')) {
-            $this->setDefaultValuesDeprecated();
+            $values = array_replace(
+                $this->defaultValuesDeprecated(),
+                $values);
         }
 
         foreach ($values as $k => $v) {
@@ -181,20 +183,16 @@ abstract class Model implements ArrayAccess
      * @deprecated
      * Sets the default values from a deprecated $properties format
      *
-     * @return self
+     * @return array
      */
-    private function setDefaultValuesDeprecated()
+    private function defaultValuesDeprecated()
     {
+        $values = [];
         foreach (static::$properties as $k => $definition) {
-            // set a value for each described property
-            if (isset($definition['default'])) {
-                $this->setValue($k, $definition['default'], false);
-            } else {
-                $this->_values[$k] = null;
-            }
+            $values[$k] = array_value($definition, 'default');
         }
 
-        return $this;
+        return $values;
     }
 
     /**
@@ -210,7 +208,7 @@ abstract class Model implements ArrayAccess
     {
         // parse deprecated property definitions
         if (property_exists($this, 'properties')) {
-            $this->parseDeprecatedProperties();
+            $this->initializeDeprecated();
         }
 
         // add in the default ID property
@@ -232,7 +230,7 @@ abstract class Model implements ArrayAccess
      *
      * @return self
      */
-    private function parseDeprecatedProperties()
+    private function initializeDeprecated()
     {
         foreach (static::$properties as $k => $definition) {
             // parse property types
