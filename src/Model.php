@@ -75,6 +75,11 @@ abstract class Model implements ArrayAccess
     /**
      * @staticvar array
      */
+    protected static $relationshipsDeprecated = [];
+
+    /**
+     * @staticvar array
+     */
     protected static $dates = [];
 
     /**
@@ -103,6 +108,8 @@ abstract class Model implements ArrayAccess
     protected $_errors;
 
     /**
+     * @deprecated
+     *
      * @var array
      */
     protected $_relationships = [];
@@ -153,6 +160,11 @@ abstract class Model implements ArrayAccess
      */
     public function __construct(array $values = [])
     {
+        // parse deprecated property definitions
+        if (property_exists($this, 'properties')) {
+            $this->setDefaultValuesDeprecated();
+        }
+
         foreach ($values as $k => $v) {
             $this->setValue($k, $v, false);
         }
@@ -166,6 +178,23 @@ abstract class Model implements ArrayAccess
     }
 
     /**
+     * @deprecated
+     * Sets the default values from a deprecated $properties format
+     *
+     * @return self
+     */
+    private function setDefaultValuesDeprecated()
+    {
+        foreach (static::$properties as $k => $definition) {
+            if (isset($definition['default'])) {
+                $this->setValue($k, $definition['default'], false);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * The initialize() method is called once per model. It's used
      * to perform any one-off tasks before the model gets
      * constructed. This is a great place to add any model
@@ -176,6 +205,11 @@ abstract class Model implements ArrayAccess
      */
     protected function initialize()
     {
+        // parse deprecated property definitions
+        if (property_exists($this, 'properties')) {
+            $this->parseDeprecatedProperties();
+        }
+
         // add in the default ID property
         if (static::$ids == [self::DEFAULT_ID_PROPERTY]) {
             if (property_exists($this, 'casts') && !isset(static::$casts[self::DEFAULT_ID_PROPERTY])) {
@@ -187,6 +221,53 @@ abstract class Model implements ArrayAccess
         if (property_exists($this, 'autoTimestamps')) {
             $this->installAutoTimestamps();
         }
+    }
+
+    /**
+     * @deprecated
+     * Parses a deprecated $properties format
+     *
+     * @return self
+     */
+    private function parseDeprecatedProperties()
+    {
+        foreach (static::$properties as $k => $definition) {
+            // parse property types
+            if (isset($definition['type'])) {
+                static::$casts[$k] = $definition['type'];
+            }
+
+            // parse validations
+            $validation = [];
+            if (isset($definition['required'])) {
+                $validation[] = 'required';
+            }
+
+            if (isset($definition['validate'])) {
+                $validation[] = $definition['validate'];
+            }
+
+            if (isset($definition['unique'])) {
+                $validation[] = 'unique';
+            }
+
+            if ($validation) {
+                static::$validations[$k] = implode('|', $validation);
+            }
+
+            // parse date formats
+            if (property_exists($this, 'autoTimestamps')) {
+                static::$dates['created_at'] = 'Y-m-d H:i:s';
+                static::$dates['updated_at'] = 'Y-m-d H:i:s';
+            }
+
+            // parse deprecated relationships
+            if (isset($definition['relation'])) {
+                static::$relationshipsDeprecated[$k] = $definition['relation'];
+            }
+        }
+
+        return $this;
     }
 
     /**
@@ -1186,12 +1267,12 @@ abstract class Model implements ArrayAccess
      */
     public function relation($k)
     {
-        if (!property_exists($this, 'properties') || !isset(static::$properties[$k])) {
+        if (!isset(static::$relationshipsDeprecated[$k])) {
             return;
         }
 
         if (!isset($this->_relationships[$k])) {
-            $model = static::$properties[$k]['relation'];
+            $model = static::$relationshipsDeprecated[$k];
             $this->_relationships[$k] = $model::find($this->$k);
         }
 

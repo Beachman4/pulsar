@@ -53,6 +53,10 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($adapter, TestModel2::getAdapter());
     }
 
+    /////////////////////////////
+    // Model Definitions
+    /////////////////////////////
+
     public function testModelName()
     {
         $this->assertEquals('TestModel', TestModel::modelName());
@@ -144,6 +148,44 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $date = TestModel2::cast(Model::TYPE_DATE, '2016-01-20 00:00:00', 'created_at');
         $this->assertInstanceOf(Carbon::class, $date);
         $this->assertEquals(1453248000, $date->timestamp);
+    }
+
+    public function testPropertiesDeprecated()
+    {
+        // this will call initialize
+        $model = new TestModelDeprecated();
+
+        // check casts
+        $this->assertEquals(Model::TYPE_FLOAT, TestModelDeprecated::getPropertyType('id'));
+        $this->assertEquals(Model::TYPE_FLOAT, TestModelDeprecated::getPropertyType('id2'));
+        $this->assertNull(TestModelDeprecated::getPropertyType('validate'));
+        $this->assertNull(TestModelDeprecated::getPropertyType('validate2'));
+        $this->assertNull(TestModelDeprecated::getPropertyType('unique'));
+        $this->assertEquals(Model::TYPE_FLOAT, TestModelDeprecated::getPropertyType('required'));
+        $this->assertEquals(Model::TYPE_BOOLEAN, TestModelDeprecated::getPropertyType('hidden'));
+        $this->assertEquals(Model::TYPE_FLOAT, TestModelDeprecated::getPropertyType('person'));
+        $this->assertEquals(Model::TYPE_ARRAY, TestModelDeprecated::getPropertyType('array'));
+        $this->assertEquals(Model::TYPE_OBJECT, TestModelDeprecated::getPropertyType('object'));
+        $this->assertNull(TestModelDeprecated::getPropertyType('mutable_create_only'));
+        $this->assertEquals(Model::TYPE_DATE, TestModelDeprecated::getPropertyType('date'));
+        $this->assertEquals(Model::TYPE_DATE, TestModelDeprecated::getPropertyType('created_at'));
+        $this->assertEquals(Model::TYPE_DATE, TestModelDeprecated::getPropertyType('updated_at'));
+
+        // check date formats
+        $this->assertEquals('U', TestModelDeprecated::getDateFormat('date'));
+        $this->assertEquals('Y-m-d H:i:s', TestModelDeprecated::getDateFormat('created_at'));
+        $this->assertEquals('Y-m-d H:i:s', TestModelDeprecated::getDateFormat('updated_at'));
+
+        // check validations
+        $this->assertEquals('email', TestModelDeprecated::$validations['validate']);
+        $this->assertEquals('validate', TestModelDeprecated::$validations['validate2']);
+        $this->assertEquals('unique', TestModelDeprecated::$validations['unique']);
+        $this->assertEquals('required', TestModelDeprecated::$validations['required']);
+
+        // check default values
+        $this->assertEquals('some default value', $model->default);
+        $this->assertEquals(20, $model->person);
+        $this->assertEquals(['tax' => '%', 'discounts' => false, 'shipping' => false], $model->array);
     }
 
     /////////////////////////////

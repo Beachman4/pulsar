@@ -284,5 +284,14 @@ class TestModelDeprecated extends Model
         'mutable_create_only' => [
             'mutable' => Model::MUTABLE_CREATE_ONLY,
         ],
+        'date' => [
+            'type' => Model::TYPE_DATE,
+        ],
     ];
+
+    protected static $autoTimestamps;
+
+    // these changes were required to support BC
+    protected static $casts = [];
+    public static $validations = [];
 }
