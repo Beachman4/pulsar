@@ -35,7 +35,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
         $obj->test = true;
         $this->assertEquals('{"test":true}', $adapter->serializeValue($obj));
 
-        $this->assertEquals(time(), $adapter->serializeValue(Carbon::now()));
+        $this->assertLessThan(3, abs(time() - $adapter->serializeValue(Carbon::now())));
 
         $this->assertEquals('2016-01-20 00:00:00', $adapter->serializeValue(Carbon::create(2016, 1, 20, 0, 0, 0), 'TestModel2', 'created_at'));
     }
