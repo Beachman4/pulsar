@@ -988,6 +988,27 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($model->set());
     }
 
+    public function testSetDeprecated()
+    {
+        $model = new TestModelDeprecated();
+        $model->refreshWith(['id' => 11, 'required' => 1]);
+
+        $adapter = Mockery::mock(AdapterInterface::class);
+        $adapter->shouldReceive('updateModel')
+                ->andReturn(true);
+
+        Model::setAdapter($adapter);
+
+        $this->assertTrue($model->set(['answer' => 42]));
+
+        $this->assertTrue(isset($model::$preSetHookValues['updated_at']));
+        unset($model::$preSetHookValues['updated_at']);
+        $expected = [
+            'answer' => 42,
+        ];
+        $this->assertEquals($expected, $model::$preSetHookValues);
+    }
+
     /////////////////////////////
     // (D) Delete
     /////////////////////////////

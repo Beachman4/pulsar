@@ -1036,6 +1036,11 @@ abstract class Model implements ArrayAccess
             return false;
         }
 
+        // DEPRECATED
+        if (method_exists($this, 'preSetHook') && !$this->preSetHook($this->_unsaved)) {
+            return false;
+        }
+
         // validate the model
         if (!$this->valid()) {
             return false;

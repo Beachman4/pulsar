@@ -295,4 +295,13 @@ class TestModelDeprecated extends Model
     protected static $casts = [];
     public static $validations = [];
     public static $protected = [];
+
+    public static $preSetHookValues;
+
+    protected function preSetHook(array &$data)
+    {
+        self::$preSetHookValues = $data;
+
+        return true;
+    }
 }
