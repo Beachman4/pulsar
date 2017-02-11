@@ -182,6 +182,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('unique', TestModelDeprecated::$validations['unique']);
         $this->assertEquals('required', TestModelDeprecated::$validations['required']);
 
+        // check protected values
+        $this->assertEquals(['mutable_create_only'], TestModelDeprecated::$protected);
+
         // check default values
         $this->assertEquals('some default value', $model->default);
         $this->assertEquals(20, $model->person);

@@ -42,7 +42,7 @@ abstract class Model implements ArrayAccess
     const DEFAULT_DATE_FORMAT = 'U'; // unix timestamps
 
     // DEPRECATED
-    const TYPE_NUMBER = 'float'; // DEPRECATED
+    const TYPE_NUMBER = 'float';
     const IMMUTABLE = 0;
     const MUTABLE_CREATE_ONLY = 1;
     const MUTABLE = 2;
@@ -264,6 +264,11 @@ abstract class Model implements ArrayAccess
             // parse deprecated relationships
             if (isset($definition['relation'])) {
                 static::$relationshipsDeprecated[$k] = $definition['relation'];
+            }
+
+            // parse protected properties
+            if (isset($definition['mutable']) && in_array($definition['mutable'], [self::IMMUTABLE, self::MUTABLE_CREATE_ONLY])) {
+                static::$protected[] = $k;
             }
         }
 

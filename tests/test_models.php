@@ -294,4 +294,5 @@ class TestModelDeprecated extends Model
     // these changes were required to support BC
     protected static $casts = [];
     public static $validations = [];
+    public static $protected = [];
 }
