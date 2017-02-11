@@ -187,6 +187,19 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(['mutable_create_only'], TestModelDeprecated::$protected);
 
         // check default values
+        $expected = [
+            'default' => 'some default value',
+            'hidden' => false,
+            'person' => 20,
+            'array' => [
+                'tax' => '%',
+                'discounts' => false,
+                'shipping' => false,
+            ],
+        ];
+        $this->assertEquals($expected, TestModelDeprecated::$defaults);
+
+        // check values
         $this->assertEquals(0, $model->id);
         $this->assertEquals(0, $model->id2);
         $this->assertEquals('some default value', $model->default);

@@ -41,6 +41,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Use PSR-6 in `Cacheable` trait.
 - Deprecated `relation()`.
 - Deprecated `exists()`.
+- Default values are now defined with `::$defaults`.
 
 ### Removed
 - Removed `toArrayDeprecated()`.

@@ -160,39 +160,27 @@ abstract class Model implements ArrayAccess
      */
     public function __construct(array $values = [])
     {
-        // parse deprecated property definitions
-        if (property_exists($this, 'properties')) {
-            $values = array_replace(
-                $this->defaultValuesDeprecated(),
-                $values);
-        }
-
-        foreach ($values as $k => $v) {
-            $this->setValue($k, $v, false);
-        }
-
         // ensure the initialize function is called only once
         $k = get_called_class();
         if (!isset(self::$initialized[$k])) {
             $this->initialize();
             self::$initialized[$k] = true;
         }
-    }
 
-    /**
-     * @deprecated
-     * Sets the default values from a deprecated $properties format
-     *
-     * @return array
-     */
-    private function defaultValuesDeprecated()
-    {
-        $values = [];
-        foreach (static::$properties as $k => $definition) {
-            $values[$k] = array_value($definition, 'default');
+        // add in presets as persisted values
+        foreach ($values as $k => $v) {
+            $this->setValue($k, $v, false);
         }
 
-        return $values;
+        // add in defaults as both persisted and unsaved values
+        if (property_exists($this, 'defaults')) {
+            foreach (static::$defaults as $k => $v) {
+                if (!array_key_exists($k, $values)) {
+                    $this->setValue($k, $v, false);
+                    $this->setValue($k, $v, true);
+                }
+            }
+        }
     }
 
     /**
@@ -289,6 +277,13 @@ abstract class Model implements ArrayAccess
             // parse protected properties
             if (isset($definition['mutable']) && in_array($definition['mutable'], [self::IMMUTABLE, self::MUTABLE_CREATE_ONLY])) {
                 static::$protected[] = $k;
+            }
+
+            // add defualt values
+            if (isset($definition['default'])) {
+                static::$defaults[$k] = $definition['default'];
+            } else {
+                $this->setValue($k, null, false);
             }
         }
 
@@ -977,9 +972,6 @@ abstract class Model implements ArrayAccess
         // mass assign values passed into create()
         $this->setValues($data);
 
-        // add in any preset values
-        $this->_unsaved = array_replace($this->_values, $this->_unsaved);
-
         // dispatch the model.creating event
         if (!$this->dispatch(ModelEvent::CREATING)) {
             return false;
@@ -997,6 +989,7 @@ abstract class Model implements ArrayAccess
 
         // update the model with the persisted values and new ID(s)
         $newValues = array_replace(
+            $this->_values,
             $this->_unsaved,
             $this->getNewIds());
         $this->refreshWith($newValues);

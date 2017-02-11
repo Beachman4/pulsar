@@ -118,22 +118,16 @@ class TestModel2 extends Model
 
     public static $query;
 
-    public function __construct(array $values = [])
-    {
-        // set default values
-        $values = array_replace([
-            'default' => 'some default value',
-            'hidden' => false,
-            'person_id' => 20,
-            'array' => [
-                'tax' => '%',
-                'discounts' => false,
-                'shipping' => false,
-            ],
-        ], $values);
-
-        parent::__construct($values);
-    }
+    protected static $defaults = [
+        'default' => 'some default value',
+        'hidden' => false,
+        'person_id' => 20,
+        'array' => [
+            'tax' => '%',
+            'discounts' => false,
+            'shipping' => false,
+        ],
+    ];
 
     public static function query()
     {
@@ -171,13 +165,9 @@ class Person extends ACLModel
         'id' => Model::TYPE_STRING,
     ];
 
-    public function __construct(array $values = [])
-    {
-        // set default values
-        $values = array_replace(['name' => 'Jared'], $values);
-
-        parent::__construct($values);
-    }
+    protected static $defaults = [
+        'name' => 'Jared',
+    ];
 
     protected function hasPermission($permission, Model $requester)
     {
@@ -303,6 +293,7 @@ class TestModelDeprecated extends Model
     protected static $casts = [];
     public static $validations = [];
     public static $protected = [];
+    public static $defaults = [];
 
     public static $preSetHookValues;
 
