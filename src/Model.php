@@ -327,6 +327,34 @@ abstract class Model implements ArrayAccess
     }
 
     /**
+     * @deprecated
+     */
+    public static function setDriver(AdapterInterface $adapter)
+    {
+        self::$adapter = $adapter;
+    }
+
+    /**
+     * @deprecated
+     */
+    public static function getDriver()
+    {
+        if (!self::$adapter) {
+            throw new AdapterMissingException('A model adapter has not been set yet.');
+        }
+
+        return self::$adapter;
+    }
+
+    /**
+     * @deprecated
+     */
+    public static function clearDriver()
+    {
+        self::$adapter = null;
+    }
+
+    /**
      * Sets the locale instance for all models.
      *
      * @param Locale $locale
