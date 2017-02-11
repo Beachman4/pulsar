@@ -177,10 +177,11 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Y-m-d H:i:s', TestModelDeprecated::getDateFormat('updated_at'));
 
         // check validations
-        $this->assertEquals('skip_empty|email', TestModelDeprecated::$validations['validate']);
-        $this->assertEquals('skip_empty|validate', TestModelDeprecated::$validations['validate2']);
-        $this->assertEquals('unique', TestModelDeprecated::$validations['unique']);
-        $this->assertEquals('required', TestModelDeprecated::$validations['required']);
+        $this->assertEquals([['skip_empty', []], ['email', []]], TestModelDeprecated::$validations['validate']);
+        $this->assertEquals([['skip_empty', []], ['custom', ['validatePass']]], TestModelDeprecated::$validations['validate2']);
+        $this->assertEquals([['unique', []]], TestModelDeprecated::$validations['unique']);
+        $this->assertEquals([['required', []]], TestModelDeprecated::$validations['required']);
+        $this->assertEquals([['custom', [[TestModelDeprecated::class, 'customValidator']]]], TestModelDeprecated::$validations['validate_custom']);
 
         // check protected values
         $this->assertEquals(['mutable_create_only'], TestModelDeprecated::$protected);
@@ -1459,6 +1460,28 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model->required = true;
         $this->assertTrue($model->valid());
 
+        $model->validate = 'not an email address';
+        $this->assertFalse($model->valid());
+        $this->assertCount(1, $model->errors());
+        $this->assertEquals(['pulsar.validation.email'], $model->errors()['validate']);
+    }
+
+    public function testValidDeprecated()
+    {
+        $model = new TestModelDeprecated();
+        $this->assertFalse($model->valid());
+        $this->assertCount(1, $model->errors());
+        $this->assertEquals(['pulsar.validation.required'], $model->errors()['required']);
+
+        $model->required = true;
+        $this->assertTrue($model->valid());
+
+        $model->validate_custom = 99;
+        $this->assertFalse($model->valid());
+        $this->assertCount(1, $model->errors());
+        $this->assertEquals(['pulsar.validation.custom'], $model->errors()['validate_custom']);
+
+        unset($model->validate_custom);
         $model->validate = 'not an email address';
         $this->assertFalse($model->valid());
         $this->assertCount(1, $model->errors());

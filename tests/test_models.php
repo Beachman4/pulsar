@@ -66,9 +66,14 @@ class TestModel extends Model
     }
 }
 
-function validate()
+function validateFail()
 {
     return false;
+}
+
+function validatePass()
+{
+    return true;
 }
 
 class TestModel2 extends Model
@@ -92,7 +97,7 @@ class TestModel2 extends Model
 
     protected static $validations = [
         'validate' => 'email',
-        'validate2' => 'custom:validate',
+        'validate2' => 'custom:validateFail',
         'required' => 'required|boolean',
         'unique' => 'unique',
     ];
@@ -251,7 +256,7 @@ class TestModelDeprecated extends Model
             'null' => true,
         ],
         'validate2' => [
-            'validate' => 'validate',
+            'validate' => 'validatePass',
             'null' => true,
         ],
         'unique' => [
@@ -287,6 +292,9 @@ class TestModelDeprecated extends Model
         'date' => [
             'type' => Model::TYPE_DATE,
         ],
+        'validate_custom' => [
+            'validate' => [self::class, 'customValidator'],
+        ],
     ];
 
     protected static $autoTimestamps;
@@ -303,5 +311,10 @@ class TestModelDeprecated extends Model
         self::$preSetHookValues = $data;
 
         return true;
+    }
+
+    public static function customValidator($value)
+    {
+        return $value == 100;
     }
 }

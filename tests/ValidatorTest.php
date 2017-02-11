@@ -143,6 +143,21 @@ class ValidatorTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('test', $data);
     }
 
+    public function testCustomStatic()
+    {
+        $validator = $this->buildValidator([['custom', [[self::class, 'aValidator']]]]);
+        $data = 'willbereplaced';
+        $this->assertTrue($this->validateWith($validator, $data));
+        $this->assertEquals('test2', $data);
+    }
+
+    public static function aValidator(&$value, array $parameters)
+    {
+        $value = 'test2';
+
+        return true;
+    }
+
     public function testEmail()
     {
         $validator = $this->buildValidator('email');

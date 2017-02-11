@@ -241,25 +241,40 @@ abstract class Model implements ArrayAccess
             }
 
             // parse validations
-            $validation = [];
+            $rules = [];
             if (isset($definition['null'])) {
-                $validation[] = 'skip_empty';
+                $rules[] = ['skip_empty', []];
             }
 
             if (isset($definition['required'])) {
-                $validation[] = 'required';
+                $rules[] = ['required', []];
             }
 
             if (isset($definition['validate'])) {
-                $validation[] = $definition['validate'];
+                if (is_callable($definition['validate'])) {
+                    $rules[] = ['custom', [$definition['validate']]];
+                } else {
+                    // explodes the string into a a list of strings
+                    // containing rules and parameters
+                    $pieces = explode('|', $definition['validate']);
+                    foreach ($pieces as $piece) {
+                        $exp = explode(':', $piece);
+                        // [0] = rule method
+                        $method = $exp[0];
+                        // [1] = optional method parameters
+                        $parameters = isset($exp[1]) ? explode(',', $exp[1]) : [];
+
+                        $rules[] = [$method, $parameters];
+                    }
+                }
             }
 
             if (isset($definition['unique'])) {
-                $validation[] = 'unique';
+                $rules[] = ['unique', []];
             }
 
-            if ($validation) {
-                static::$validations[$k] = implode('|', $validation);
+            if ($rules) {
+                static::$validations[$k] = $rules;
             }
 
             // parse date formats
