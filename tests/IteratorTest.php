@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Adapter\AdapterInterface;
 use Pulsar\Iterator;
 use Pulsar\Query;
 
@@ -23,7 +24,7 @@ class IteratorTest extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturnUsing(function ($query) {
@@ -38,12 +39,12 @@ class IteratorTest extends PHPUnit_Framework_TestCase
                     }
 
                     return $range;
-               });
+                });
 
         $adapter->shouldReceive('totalRecords')
                ->andReturnUsing(function () {
-                    return IteratorTest::$totalRecords;
-                });
+                   return IteratorTest::$totalRecords;
+               });
 
         self::$adapter = $adapter;
         IteratorTestModel::setAdapter(self::$adapter);
@@ -104,7 +105,7 @@ class IteratorTest extends PHPUnit_Framework_TestCase
         for ($i = self::$start; $i < $count + 1; ++$i) {
             $current = self::$iterator->current();
             if ($i < $count) {
-                $this->assertInstanceOf('IteratorTestModel', $current);
+                $this->assertInstanceOf(IteratorTestModel::class, $current);
                 $this->assertEquals($i, $current->id());
             } else {
                 $this->assertNull($current);
@@ -130,7 +131,7 @@ class IteratorTest extends PHPUnit_Framework_TestCase
         $n = 0;
         foreach (self::$iterator as $k => $model) {
             $this->assertEquals($i, $k);
-            $this->assertInstanceOf('IteratorTestModel', $model);
+            $this->assertInstanceOf(IteratorTestModel::class, $model);
             $this->assertEquals($i, $model->id());
             ++$i;
             ++$n;
@@ -151,7 +152,7 @@ class IteratorTest extends PHPUnit_Framework_TestCase
         $n = 0;
         foreach (self::$iterator as $k => $model) {
             $this->assertEquals($i, $k);
-            $this->assertInstanceOf('IteratorTestModel', $model);
+            $this->assertInstanceOf(IteratorTestModel::class, $model);
             $this->assertEquals($i, $model->id());
             ++$i;
             ++$n;
@@ -194,7 +195,7 @@ class IteratorTest extends PHPUnit_Framework_TestCase
         $i = $start;
         foreach ($iterator as $k => $model) {
             $this->assertEquals($i, $k);
-            $this->assertInstanceOf('IteratorTestModel', $model);
+            $this->assertInstanceOf(IteratorTestModel::class, $model);
             $this->assertEquals($i, $model->id());
             ++$i;
         }

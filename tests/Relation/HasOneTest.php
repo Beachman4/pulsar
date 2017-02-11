@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Adapter\AdapterInterface;
 use Pulsar\Model;
 use Pulsar\Relation\HasOne;
 
@@ -17,7 +18,7 @@ class HasOneTest extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
-        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        self::$adapter = Mockery::mock(AdapterInterface::class);
         Model::setAdapter(self::$adapter);
     }
 
@@ -28,7 +29,7 @@ class HasOneTest extends PHPUnit_Framework_TestCase
         $relation = new HasOne($person, 'id', 'Balance', 'person_id');
 
         $query = $relation->getQuery();
-        $this->assertInstanceOf('Balance', $query->getModel());
+        $this->assertInstanceOf(Balance::class, $query->getModel());
         $this->assertEquals(['person_id' => 10], $query->getWhere());
         $this->assertEquals(1, $query->getLimit());
     }
@@ -43,7 +44,7 @@ class HasOneTest extends PHPUnit_Framework_TestCase
                       ->andReturn([['id' => 11]]);
 
         $result = $relation->getResults();
-        $this->assertInstanceOf('Balance', $result);
+        $this->assertInstanceOf(Balance::class, $result);
         $this->assertEquals(11, $result->id());
     }
 
@@ -91,7 +92,7 @@ class HasOneTest extends PHPUnit_Framework_TestCase
 
         $balance = $relation->create(['test' => true]);
 
-        $this->assertInstanceOf('Balance', $balance);
+        $this->assertInstanceOf(Balance::class, $balance);
         $this->assertEquals(100, $balance->person_id);
         $this->assertEquals(true, $balance->test);
         $this->assertTrue($balance->persisted());

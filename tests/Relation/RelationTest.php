@@ -9,13 +9,14 @@
  * @license MIT
  */
 use Pulsar\Model;
+use Pulsar\Query;
 use Pulsar\Relation\Relation;
 
 class RelationTest extends PHPUnit_Framework_TestCase
 {
     public function testConstruct()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $this->assertTrue($relation->initQuery);
@@ -23,7 +24,7 @@ class RelationTest extends PHPUnit_Framework_TestCase
 
     public function testGetLocalModel()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $this->assertEquals($model, $relation->getLocalModel());
@@ -31,7 +32,7 @@ class RelationTest extends PHPUnit_Framework_TestCase
 
     public function testGetLocalKey()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $this->assertEquals('user_id', $relation->getLocalKey());
@@ -39,7 +40,7 @@ class RelationTest extends PHPUnit_Framework_TestCase
 
     public function testGetForeignModel()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $this->assertEquals('TestModel', $relation->getForeignModel());
@@ -47,7 +48,7 @@ class RelationTest extends PHPUnit_Framework_TestCase
 
     public function testGetForeignKey()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $this->assertEquals('id', $relation->getForeignKey());
@@ -55,16 +56,16 @@ class RelationTest extends PHPUnit_Framework_TestCase
 
     public function testGetQuery()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $query = $relation->getQuery();
-        $this->assertInstanceOf('Pulsar\Query', $query);
+        $this->assertInstanceOf(Query::class, $query);
     }
 
     public function testCallOnQuery()
     {
-        $model = Mockery::mock('Pulsar\Model');
+        $model = Mockery::mock(Model::class);
         $relation = new DistantRelation($model, 'user_id', 'TestModel', 'id');
 
         $relation->where(['name' => 'Bob']);

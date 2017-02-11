@@ -8,8 +8,10 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Adapter\AdapterInterface;
 use Pulsar\Model;
 use Pulsar\Relation\BelongsToMany;
+use Pulsar\Relation\Pivot;
 
 class BelongsToManyTest extends PHPUnit_Framework_TestCase
 {
@@ -17,7 +19,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
-        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        self::$adapter = Mockery::mock(AdapterInterface::class);
         Model::setAdapter(self::$adapter);
     }
 
@@ -30,10 +32,10 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('group_person', $relation->getTablename());
 
         $query = $relation->getQuery();
-        $this->assertInstanceOf('Group', $query->getModel());
+        $this->assertInstanceOf(Group::class, $query->getModel());
         $joins = $query->getJoins();
         $this->assertCount(1, $joins);
-        $this->assertInstanceOf('Pulsar\Relation\Pivot', $joins[0][0]);
+        $this->assertInstanceOf(Pivot::class, $joins[0][0]);
         $this->assertEquals('group_person', $joins[0][0]->getTablename());
         $this->assertEquals('group_id', $joins[0][1]);
         $this->assertEquals('id', $joins[0][2]);
@@ -54,7 +56,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $this->assertCount(2, $result);
 
         foreach ($result as $m) {
-            $this->assertInstanceOf('Group', $m);
+            $this->assertInstanceOf(Group::class, $m);
         }
 
         $this->assertEquals(11, $result[0]->id());
@@ -91,7 +93,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
 
         // verify pivot
         $pivot = $group->pivot;
-        $this->assertInstanceOf('Pulsar\Relation\Pivot', $pivot);
+        $this->assertInstanceOf(Pivot::class, $pivot);
         $this->assertEquals('group_person', $pivot->getTablename());
         $this->assertEquals(1, $pivot->group_id);
         $this->assertEquals(2, $pivot->person_id);
@@ -112,13 +114,13 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
 
         $group = $relation->create(['test' => true]);
 
-        $this->assertInstanceOf('Group', $group);
+        $this->assertInstanceOf(Group::class, $group);
         $this->assertEquals(true, $group->test);
         $this->assertTrue($group->persisted());
 
         // verify pivot
         $pivot = $group->pivot;
-        $this->assertInstanceOf('Pulsar\Relation\Pivot', $pivot);
+        $this->assertInstanceOf(Pivot::class, $pivot);
         $this->assertEquals('group_person', $pivot->getTablename());
         $this->assertEquals(1, $pivot->group_id);
         $this->assertEquals(2, $pivot->person_id);
@@ -136,7 +138,7 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($relation, $relation->attach($group));
 
         $pivot = $group->pivot;
-        $this->assertInstanceOf('Pulsar\Relation\Pivot', $pivot);
+        $this->assertInstanceOf(Pivot::class, $pivot);
         $this->assertEquals('group_person', $pivot->getTablename());
         $this->assertEquals(2, $pivot->person_id);
         $this->assertEquals(3, $pivot->group_id);
@@ -162,18 +164,18 @@ class BelongsToManyTest extends PHPUnit_Framework_TestCase
 
         $relation = new BelongsToMany($person, 'person_id', 'group_person', 'Group', 'group_id');
 
-        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        self::$adapter = Mockery::mock(AdapterInterface::class);
 
         self::$adapter->shouldReceive('totalRecords')
                       ->andReturn(3);
 
         self::$adapter->shouldReceive('queryModels')
                       ->andReturnUsing(function ($query) {
-                        $this->assertInstanceOf('Pulsar\Relation\Pivot', $query->getModel());
-                        $this->assertEquals('group_person', $query->getModel()->getTablename());
-                        $this->assertEquals(['group_id NOT IN (1,2,3)', 'person_id' => 2], $query->getWhere());
+                          $this->assertInstanceOf(Pivot::class, $query->getModel());
+                          $this->assertEquals('group_person', $query->getModel()->getTablename());
+                          $this->assertEquals(['group_id NOT IN (1,2,3)', 'person_id' => 2], $query->getWhere());
 
-                        return [['id' => 3], ['id' => 4], ['id' => 5]];
+                          return [['id' => 3], ['id' => 4], ['id' => 5]];
                       });
 
         self::$adapter->shouldReceive('deleteModel')

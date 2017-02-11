@@ -41,14 +41,14 @@ class PropertyTest extends PHPUnit_Framework_TestCase
     public function testToDate()
     {
         $date = Property::to_date(123, 'U');
-        $this->assertInstanceOf('Carbon\Carbon', $date);
+        $this->assertInstanceOf(Carbon::class, $date);
         $this->assertEquals(123, $date->timestamp);
 
         $date = new Carbon();
         $this->assertEquals($date, Property::to_date($date, 'U'));
 
         $date = Property::to_date('2016-01-20 00:00:00', 'Y-m-d H:i:s');
-        $this->assertInstanceOf('Carbon\Carbon', $date);
+        $this->assertInstanceOf(Carbon::class, $date);
         $this->assertEquals(1453248000, $date->timestamp);
     }
 

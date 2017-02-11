@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Adapter\AdapterInterface;
 use Pulsar\Model;
 use Pulsar\Relation\BelongsTo;
 
@@ -17,7 +18,7 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
-        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        self::$adapter = Mockery::mock(AdapterInterface::class);
         Model::setAdapter(self::$adapter);
     }
 
@@ -28,7 +29,7 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
         $relation = new BelongsTo($post, 'category_id', 'Category', 'id');
 
         $query = $relation->getQuery();
-        $this->assertInstanceOf('Category', $query->getModel());
+        $this->assertInstanceOf(Category::class, $query->getModel());
         $this->assertEquals(['id' => 10], $query->getWhere());
         $this->assertEquals(1, $query->getLimit());
     }
@@ -43,7 +44,7 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
                       ->andReturn([['id' => 11]]);
 
         $result = $relation->getResults();
-        $this->assertInstanceOf('Category', $result);
+        $this->assertInstanceOf(Category::class, $result);
         $this->assertEquals(11, $result->id());
     }
 
@@ -93,7 +94,7 @@ class BelongsToTest extends PHPUnit_Framework_TestCase
 
         $category = $relation->create(['test' => true]);
 
-        $this->assertInstanceOf('Category', $category);
+        $this->assertInstanceOf(Category::class, $category);
         $this->assertEquals(true, $category->test);
         $this->assertTrue($category->persisted());
 

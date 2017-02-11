@@ -45,7 +45,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
         $db = Mockery::mock();
 
         // insert query mock
-        $stmt = Mockery::mock('PDOStatement');
+        $stmt = Mockery::mock(PDOStatement::class);
         $execute = Mockery::mock();
         $execute->shouldReceive('execute')
                 ->andReturn($stmt);
@@ -117,7 +117,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
     public function testUpdateModel()
     {
         // update query mock
-        $stmt = Mockery::mock('PDOStatement');
+        $stmt = Mockery::mock(PDOStatement::class);
         $execute = Mockery::mock();
         $execute->shouldReceive('execute')->andReturn($stmt);
         $where = Mockery::mock();
@@ -167,7 +167,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
 
     public function testDeleteModel()
     {
-        $stmt = Mockery::mock('PDOStatement');
+        $stmt = Mockery::mock(PDOStatement::class);
         $db = Mockery::mock();
         $db->shouldReceive('delete->where->execute')
            ->andReturn($stmt);
@@ -185,7 +185,7 @@ class DatabaseAdapterTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Pulsar\Exception\AdapterException', 'An error occurred in the database adapter while deleting the Person');
 
-        $stmt = Mockery::mock('PDOStatement');
+        $stmt = Mockery::mock(PDOStatement::class);
         $db = Mockery::mock();
         $db->shouldReceive('delete->where->execute')
            ->andThrow(new PDOException('error'));

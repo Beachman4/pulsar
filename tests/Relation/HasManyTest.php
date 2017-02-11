@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Adapter\AdapterInterface;
 use Pulsar\Model;
 use Pulsar\Relation\HasMany;
 
@@ -17,7 +18,7 @@ class HasManyTest extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
-        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        self::$adapter = Mockery::mock(AdapterInterface::class);
         Model::setAdapter(self::$adapter);
     }
 
@@ -44,7 +45,7 @@ class HasManyTest extends PHPUnit_Framework_TestCase
         $this->assertCount(2, $result);
 
         foreach ($result as $m) {
-            $this->assertInstanceOf('Car', $m);
+            $this->assertInstanceOf(Car::class, $m);
         }
 
         $this->assertEquals(11, $result[0]->id());
@@ -95,7 +96,7 @@ class HasManyTest extends PHPUnit_Framework_TestCase
 
         $car = $relation->create(['test' => true]);
 
-        $this->assertInstanceOf('Car', $car);
+        $this->assertInstanceOf(Car::class, $car);
         $this->assertEquals(100, $car->person_id);
         $this->assertEquals(true, $car->test);
         $this->assertTrue($car->persisted());
@@ -134,17 +135,17 @@ class HasManyTest extends PHPUnit_Framework_TestCase
 
         $relation = new HasMany($person, 'id', 'Car', 'person_id');
 
-        self::$adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        self::$adapter = Mockery::mock(AdapterInterface::class);
 
         self::$adapter->shouldReceive('totalRecords')
                       ->andReturn(3);
 
         self::$adapter->shouldReceive('queryModels')
                       ->andReturnUsing(function ($query) {
-                        $this->assertInstanceOf('Car', $query->getModel());
-                        $this->assertEquals(['person_id NOT IN (1,2,3)'], $query->getWhere());
+                          $this->assertInstanceOf(Car::class, $query->getModel());
+                          $this->assertEquals(['person_id NOT IN (1,2,3)'], $query->getWhere());
 
-                        return [['id' => 3], ['id' => 4], ['id' => 5]];
+                          return [['id' => 3], ['id' => 4], ['id' => 5]];
                       });
 
         self::$adapter->shouldReceive('deleteModel')

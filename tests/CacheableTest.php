@@ -8,6 +8,8 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+use Pulsar\Adapter\AdapterInterface;
+use Psr\Cache\CacheItemInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 require_once 'tests/test_models.php';
@@ -66,13 +68,13 @@ class CacheableTest extends PHPUnit_Framework_TestCase
         $model = new CacheableModel();
         $model->refreshWith(['id' => 5]);
         $item = $model->getCacheItem();
-        $this->assertInstanceOf('Psr\Cache\CacheItemInterface', $item);
+        $this->assertInstanceOf(CacheItemInterface::class, $item);
         $this->assertEquals('models.cacheablemodel.5', $item->getKey());
 
         $model = new CacheableModel();
         $model->refreshWith(['id' => 6]);
         $item = $model->getCacheItem();
-        $this->assertInstanceOf('Psr\Cache\CacheItemInterface', $item);
+        $this->assertInstanceOf(CacheItemInterface::class, $item);
         $this->assertEquals('models.cacheablemodel.6', $item->getKey());
     }
 
@@ -81,7 +83,7 @@ class CacheableTest extends PHPUnit_Framework_TestCase
         $cache = $this->getCache();
         CacheableModel::setCachePool($cache);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturn([['id' => 100, 'answer' => 42]])
@@ -92,7 +94,7 @@ class CacheableTest extends PHPUnit_Framework_TestCase
         // the first find() call should be a miss
         // this triggers a load from the data layer
         $model = CacheableModel::find(100);
-        $this->assertInstanceOf('CacheableModel', $model);
+        $this->assertInstanceOf(CacheableModel::class, $model);
         $this->assertEquals(100, $model->id());
 
         // value should now be cached
@@ -104,7 +106,7 @@ class CacheableTest extends PHPUnit_Framework_TestCase
 
         // the next find() call should be a hit from the cache
         $model = CacheableModel::find(100);
-        $this->assertInstanceOf('CacheableModel', $model);
+        $this->assertInstanceOf(CacheableModel::class, $model);
         $this->assertEquals(100, $model->id());
         $this->assertEquals(42, $model->answer);
     }

@@ -9,6 +9,7 @@
  * @license MIT
  */
 use Infuse\Application;
+use Pulsar\Adapter\DatabaseAdapter;
 use Pulsar\Services\ModelAdapter;
 use Pulsar\Model;
 
@@ -18,15 +19,15 @@ class ModelAdapterTest extends PHPUnit_Framework_TestCase
     {
         $config = [
             'models' => [
-                'adapter' => 'Pulsar\Adapter\DatabaseAdapter',
+                'adapter' => DatabaseAdapter::class,
             ],
         ];
         $app = new Application($config);
         $service = new ModelAdapter($app);
-        $this->assertInstanceOf('Pulsar\Adapter\DatabaseAdapter', Model::getAdapter());
+        $this->assertInstanceOf(DatabaseAdapter::class, Model::getAdapter());
 
         $adapter = $service($app);
-        $this->assertInstanceOf('Pulsar\Adapter\DatabaseAdapter', $adapter);
+        $this->assertInstanceOf(DatabaseAdapter::class, $adapter);
 
         $locale = Model::getLocale();
         $this->assertEquals($app['locale'], $locale);
