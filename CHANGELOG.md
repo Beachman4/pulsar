@@ -39,11 +39,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Support custom date formats in the data layer, in addition to the default UNIX timestamp. Can be specified per-property with `::$dates`.
 - Support Symfony 3.
 - Use PSR-6 in `Cacheable` trait.
+- Deprecated `relation()`.
 
 ### Removed
 - Removed `toArrayDeprecated()`.
 - Removed deprecated hooks for create, update, and delete operations.
-- Removed `relation()`.
 - Removed `exists()`.
 - Removed `Validate::is()`.
 - Removed default property values. Can instead override the constructor to implement default values.

@@ -231,3 +231,58 @@ class Car extends Model
 class Balance extends Model
 {
 }
+
+class TestModelDeprecated extends Model
+{
+    protected static $ids = ['id', 'id2'];
+
+    protected static $properties = [
+        'id' => [
+            'type' => Model::TYPE_NUMBER,
+        ],
+        'id2' => [
+            'type' => Model::TYPE_NUMBER,
+        ],
+        'default' => [
+            'default' => 'some default value',
+        ],
+        'validate' => [
+            'validate' => 'email',
+            'null' => true,
+        ],
+        'validate2' => [
+            'validate' => 'validate',
+            'null' => true,
+        ],
+        'unique' => [
+            'unique' => true,
+        ],
+        'required' => [
+            'type' => Model::TYPE_NUMBER,
+            'required' => true,
+        ],
+        'hidden' => [
+            'type' => Model::TYPE_BOOLEAN,
+            'default' => false,
+        ],
+        'person' => [
+            'type' => Model::TYPE_NUMBER,
+            'relation' => 'Person',
+            'default' => 20,
+        ],
+        'array' => [
+            'type' => Model::TYPE_ARRAY,
+            'default' => [
+                'tax' => '%',
+                'discounts' => false,
+                'shipping' => false,
+            ],
+        ],
+        'object' => [
+            'type' => Model::TYPE_OBJECT,
+        ],
+        'mutable_create_only' => [
+            'mutable' => Model::MUTABLE_CREATE_ONLY,
+        ],
+    ];
+}

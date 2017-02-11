@@ -99,6 +99,9 @@ trait Cacheable
             self::$cachePool->deleteItem($k);
         }
 
+        // DEPRECATED
+        $this->_relationships = [];
+
         return $this;
     }
 

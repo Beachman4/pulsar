@@ -41,6 +41,12 @@ abstract class Model implements ArrayAccess
 
     const DEFAULT_DATE_FORMAT = 'U'; // unix timestamps
 
+    // DEPRECATED
+    const TYPE_NUMBER = 'float'; // DEPRECATED
+    const IMMUTABLE = 0;
+    const MUTABLE_CREATE_ONLY = 1;
+    const MUTABLE = 2;
+
     /////////////////////////////
     // Model visible variables
     /////////////////////////////
@@ -95,6 +101,11 @@ abstract class Model implements ArrayAccess
      * @var Errors
      */
     protected $_errors;
+
+    /**
+     * @var array
+     */
+    protected $_relationships = [];
 
     /////////////////////////////
     // Base model variables
@@ -352,6 +363,12 @@ abstract class Model implements ArrayAccess
 
         if (array_key_exists($name, $this->_unsaved)) {
             unset($this->_unsaved[$name]);
+        }
+
+        // if changing property, remove relation model
+        // DEPRECATED
+        if (isset($this->_relationships[$name])) {
+            unset($this->_relationships[$name]);
         }
     }
 
@@ -627,6 +644,12 @@ abstract class Model implements ArrayAccess
             $this->_unsaved[$name] = $value;
         } else {
             $this->_values[$name] = $value;
+        }
+
+        // if changing property, remove relation model
+        // DEPRECATED
+        if (isset($this->_relationships[$name])) {
+            unset($this->_relationships[$name]);
         }
 
         return $this;
@@ -975,6 +998,10 @@ abstract class Model implements ArrayAccess
             return $this;
         }
 
+        // clear any relations
+        // DEPRECATED
+        $this->_relationships = [];
+
         return $this->refreshWith($values[0]);
     }
 
@@ -1147,6 +1174,28 @@ abstract class Model implements ArrayAccess
         }
 
         return $this->_values[$name];
+    }
+
+    /**
+     * @deprecated
+     * Gets a relationship model with a has one relationship
+     *
+     * @param string $k property
+     *
+     * @return \Pulsar\Model|null
+     */
+    public function relation($k)
+    {
+        if (!property_exists($this, 'properties') || !isset(static::$properties[$k])) {
+            return;
+        }
+
+        if (!isset($this->_relationships[$k])) {
+            $model = static::$properties[$k]['relation'];
+            $this->_relationships[$k] = $model::find($this->$k);
+        }
+
+        return $this->_relationships[$k];
     }
 
     /////////////////////////////
@@ -1330,7 +1379,7 @@ abstract class Model implements ArrayAccess
 
     /**
      * Gets a new validator instance for this model.
-     * 
+     *
      * @return Validator
      */
     public function getValidator()

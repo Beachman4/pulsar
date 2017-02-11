@@ -493,8 +493,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $newModel->id2 = 2;
         $newModel->required = 25;
         $this->assertTrue($newModel->create());
-        $this->assertEquals(time(), $newModel->created_at->timestamp);
-        $this->assertEquals(time(), $newModel->updated_at->timestamp);
+        $this->assertLessThan(3, abs(time() - $newModel->created_at->timestamp));
+        $this->assertLessThan(3, abs(time() - $newModel->updated_at->timestamp));
     }
 
     public function testCreateMassAssignment()
@@ -770,7 +770,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model->required = true;
         $this->assertTrue($model->set());
-        $this->assertEquals(time(), $model->updated_at->timestamp);
+        $this->assertLessThan(3, abs(time() - $model->updated_at->timestamp));
     }
 
     public function testSetMassAssignment()
@@ -1240,6 +1240,40 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model = new TestModel2();
         unset($model->person);
+    }
+
+    public function testRelationDeprecated()
+    {
+        $adapter = Mockery::mock(AdapterInterface::class);
+        $adapter->shouldReceive('queryModels')
+                ->andReturnUsing(function ($query) {
+                    $id = $query->getWhere()['id'];
+
+                    return [['id' => $id]];
+                });
+
+        Model::setAdapter($adapter);
+
+        $model = new TestModelDeprecated();
+        $model->person = 2;
+
+        $person = $model->relation('person');
+        $this->assertInstanceOf(Person::class, $person);
+        $this->assertEquals(2, $person->id());
+
+        // test if relation model is cached
+        $person->test = 'hello';
+        $person2 = $model->relation('person');
+        $this->assertEquals('hello', $person2->test);
+
+        // reset the relation
+        $model->person = 3;
+        $this->assertEquals(3, $model->relation('person')->id());
+
+        // check other methods for thorougness...
+        unset($model->person);
+        $model->person = 4;
+        $this->assertEquals(4, $model->relation('person')->id());
     }
 
     /////////////////////////////
