@@ -186,8 +186,11 @@ abstract class Model implements ArrayAccess
     private function setDefaultValuesDeprecated()
     {
         foreach (static::$properties as $k => $definition) {
+            // set a value for each described property
             if (isset($definition['default'])) {
                 $this->setValue($k, $definition['default'], false);
+            } else {
+                $this->_values[$k] = null;
             }
         }
 
