@@ -10,8 +10,13 @@
  */
 use Carbon\Carbon;
 use Infuse\Locale;
+use Pulsar\Adapter\AdapterInterface;
+use Pulsar\Exception\AdapterMissingException;
+use Pulsar\Exception\MassAssignmentException;
+use Pulsar\Exception\NotFoundException;
 use Pulsar\Model;
 use Pulsar\ModelEvent;
+use Pulsar\Query;
 
 require_once 'test_models.php';
 
@@ -31,14 +36,14 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testAdapterMissing()
     {
-        $this->setExpectedException('Pulsar\Exception\AdapterMissingException');
+        $this->setExpectedException(AdapterMissingException::class);
         Model::clearAdapter();
         Model::getAdapter();
     }
 
     public function testAdapter()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
         Model::setAdapter($adapter);
 
         $this->assertEquals($adapter, TestModel::getAdapter());
@@ -52,7 +57,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals('TestModel', TestModel::modelName());
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('getTablename')
                 ->withArgs(['TestModel'])
                 ->andReturn('TestModels');
@@ -78,7 +83,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testBuildFromId()
     {
         $model = TestModel::buildFromId(100);
-        $this->assertInstanceOf('TestModel', $model);
+        $this->assertInstanceOf(TestModel::class, $model);
         $this->assertEquals(100, $model->id());
 
         $model = TestModel2::buildFromId([101, 102]);
@@ -137,7 +142,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     public function testCastDate()
     {
         $date = TestModel2::cast(Model::TYPE_DATE, '2016-01-20 00:00:00', 'created_at');
-        $this->assertInstanceOf('Carbon\Carbon', $date);
+        $this->assertInstanceOf(Carbon::class, $date);
         $this->assertEquals(1453248000, $date->timestamp);
     }
 
@@ -191,7 +196,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testGetNonExisting()
     {
-        $this->setExpectedException('InvalidArgumentException');
+        $this->setExpectedException(InvalidArgumentException::class);
 
         $model = new TestModel();
         $model->nonexistent_property;
@@ -320,7 +325,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'validate2' => null,
         ]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('queryModels')
                 ->andReturn([['id' => 3, 'name' => 'Bob', 'email' => 'bob@example.com']]);
 
@@ -394,7 +399,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $newModel = new TestModel();
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->withArgs([$newModel, [
@@ -427,7 +432,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $newModel = new TestModel();
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->withArgs([$newModel, [
@@ -458,7 +463,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateMutable()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->andReturn(true)
@@ -476,7 +481,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateAutoTimestamps()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->andReturn(true);
@@ -496,11 +501,18 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $newModel = new TestModel2();
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
-
         $object = new stdClass();
         $object->test = true;
 
+        $input = [
+            'id' => 1,
+            'id2' => 2,
+            'required' => 'on',
+            'validate' => '  SHOULDTRIMWS@EXAMPLE.COM ',
+            'object' => $object,
+        ];
+
+        $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('createModel')
                 ->withArgs([$newModel, [
                     'id' => 1,
@@ -524,20 +536,12 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         Model::setAdapter($adapter);
 
-        $input = [
-            'id' => 1,
-            'id2' => 2,
-            'required' => 'on',
-            'validate' => '  SHOULDTRIMWS@EXAMPLE.COM ',
-            'object' => $object,
-        ];
-
         $this->assertTrue($newModel->create($input));
     }
 
     public function testCreateMassAssignmentFail()
     {
-        $this->setExpectedException('Pulsar\Exception\MassAssignmentException');
+        $this->setExpectedException(MassAssignmentException::class);
 
         $input = [
             'array' => 'test',
@@ -551,7 +555,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $newModel = new TestModel();
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->andReturn(true);
@@ -565,7 +569,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateFailWithId()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $this->setExpectedException(BadMethodCallException::class);
 
         $model = new TestModel();
         $model->refreshWith(['id' => 5]);
@@ -586,7 +590,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreatedListenerFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->andReturn(true);
@@ -616,7 +620,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateSavedListenerFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->andReturn(true);
@@ -639,7 +643,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $query = TestModel2::query();
         TestModel2::setQuery($query);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('totalRecords')
                 ->andReturn(1);
@@ -685,7 +689,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testCreateFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('createModel')
                 ->andReturn(false);
@@ -709,7 +713,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $this->assertTrue($model->set());
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->withArgs([$model, ['answer' => 42]])
@@ -728,7 +732,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel();
         $model->refreshWith(['id' => 10]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->withArgs([$model, [
@@ -748,7 +752,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel2();
         $model->refreshWith(['id' => 10]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->andReturn(true);
@@ -765,7 +769,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel();
         $model->refreshWith(['id' => 11]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->withArgs([$model, ['answer' => 'hello', 'mutator' => 'BLAH', 'relation' => 0]])
@@ -783,7 +787,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetMassAssignmentFail()
     {
-        $this->setExpectedException('Pulsar\Exception\MassAssignmentException');
+        $this->setExpectedException(MassAssignmentException::class);
 
         $input = [
             'protected' => 'test',
@@ -799,7 +803,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel();
         $model->refreshWith(['id' => 10]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('updateModel')
                 ->andReturn(false);
 
@@ -812,7 +816,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetFailWithNoId()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $this->setExpectedException(BadMethodCallException::class);
 
         $model = new TestModel();
         $this->assertFalse($model->set());
@@ -832,7 +836,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testUpdatedListenerFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->andReturn(true);
@@ -863,7 +867,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testUpdateSavedListenerFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->andReturn(true);
@@ -885,7 +889,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $query = TestModel2::query();
         TestModel2::setQuery($query);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('totalRecords')
                 ->andReturn(0);
@@ -907,7 +911,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetUniqueSkip()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('updateModel')
                 ->andReturn(true);
@@ -939,7 +943,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel2();
         $model->refreshWith(['id' => 1]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('deleteModel')
                 ->withArgs([$model])
                 ->andReturn(true);
@@ -951,7 +955,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testDeleteWithNoId()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $this->setExpectedException(BadMethodCallException::class);
 
         $model = new TestModel();
         $this->assertFalse($model->delete());
@@ -971,7 +975,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testDeletedListenerFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('deleteModel')
                 ->andReturn(true);
@@ -993,7 +997,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel2();
         $model->refreshWith(['id' => 1]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
         $adapter->shouldReceive('deleteModel')
                 ->withArgs([$model])
                 ->andReturn(false);
@@ -1011,20 +1015,20 @@ class ModelTest extends PHPUnit_Framework_TestCase
     {
         $query = TestModel::query();
 
-        $this->assertInstanceOf('Pulsar\Query', $query);
-        $this->assertInstanceOf('TestModel', $query->getModel());
+        $this->assertInstanceOf(Query::class, $query);
+        $this->assertInstanceOf(TestModel::class, $query->getModel());
     }
 
     public function testQueryStatic()
     {
         $query = TestModel::where(['name' => 'Bob']);
 
-        $this->assertInstanceOf('Pulsar\Query', $query);
+        $this->assertInstanceOf(Query::class, $query);
     }
 
     public function testFind()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturnUsing(function ($query) {
@@ -1044,7 +1048,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testFindFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturn([])
@@ -1057,7 +1061,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testFindOrFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturn([['id' => 100, 'answer' => 42]])
@@ -1073,9 +1077,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testFindOrFailNotFound()
     {
-        $this->setExpectedException('Pulsar\Exception\NotFoundException');
+        $this->setExpectedException(NotFoundException::class);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturn([])
@@ -1091,7 +1095,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $query = TestModel2::query();
         TestModel2::setQuery($query);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('totalRecords')
                 ->andReturn(1);
@@ -1108,7 +1112,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $query = TestModel2::query();
         TestModel2::setQuery($query);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('totalRecords')
                 ->andReturn(2);
@@ -1196,7 +1200,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testGetRelationship()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $person = new Person();
         $adapter->shouldReceive('queryModels')
@@ -1215,7 +1219,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testSetRelationship()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $this->setExpectedException(BadMethodCallException::class);
 
         $model = new TestModel2();
         $model->person = 'test';
@@ -1223,7 +1227,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testUnsetRelationship()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $this->setExpectedException(BadMethodCallException::class);
 
         $model = new TestModel2();
         unset($model->person);
@@ -1235,7 +1239,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testRefreshNotPersisted()
     {
-        $this->setExpectedException('Pulsar\Exception\NotFoundException');
+        $this->setExpectedException(NotFoundException::class);
 
         $model = new TestModel2();
         $model->refresh();
@@ -1246,7 +1250,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel2();
         $model->refreshWith(['id' => 12, 'id2' => 13]);
 
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                 ->andReturnUsing(function ($query) {
@@ -1264,7 +1268,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
     public function testRefreshFail()
     {
-        $adapter = Mockery::mock('Pulsar\Adapter\AdapterInterface');
+        $adapter = Mockery::mock(AdapterInterface::class);
 
         $adapter->shouldReceive('queryModels')
                ->andReturn([]);
