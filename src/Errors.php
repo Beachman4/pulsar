@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+
 namespace Pulsar;
 
 use ArrayAccess;
@@ -39,7 +40,7 @@ class Errors implements IteratorAggregate, Countable, ArrayAccess
         'pulsar.validation.string' => '{{property}} must be a string of the proper length',
         'pulsar.validation.time_zone' => '{{property}} only allows valid time zones',
         'pulsar.validation.timestamp' => '{{property}} only allows timestamps',
-        'pulsar.validation.unique' => '{{property}} must be unique',
+        'pulsar.validation.unique' => 'The {{property}} you chose has already been taken. Please try a different {{property}}.',
         'pulsar.validation.url' => '{{property}} only allows valid URLs',
     ];
 
