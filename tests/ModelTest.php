@@ -635,6 +635,40 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $newModel->create($input);
     }
 
+    public function testCreateUnsaved()
+    {
+        $newModel = new TestModel();
+
+        $adapter = Mockery::mock(AdapterInterface::class);
+
+        $adapter->shouldReceive('createModel')
+                ->withArgs([$newModel, [
+                    'mutator' => 'BLAH',
+                    'relation' => 0,
+                    'answer' => 42,
+                ]])
+                ->andReturn(true)
+                ->once();
+
+        $adapter->shouldReceive('getCreatedID')
+                ->withArgs([$newModel, 'id'])
+                ->andReturn(1);
+
+        Model::setAdapter($adapter);
+
+        $params = [
+            'relation' => '',
+            'answer' => 42,
+            'mutator' => 'blah',
+            'not_saved' => 1234,
+        ];
+
+        $this->assertTrue($newModel->create($params));
+        $this->assertEquals(1, $newModel->id());
+        $this->assertEquals(1, $newModel->id);
+        $this->assertEquals(42, $newModel->answer);
+    }
+
     public function testCreateWithAssignedId()
     {
         $newModel = new TestModel();
@@ -880,6 +914,26 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $model = new TestModel2();
         $model->refreshWith(['id' => 11]);
         $model->set($input);
+    }
+
+    public function testSetUnsaved()
+    {
+        $model = new TestModel();
+        $model->refreshWith(['id' => 10]);
+
+        $adapter = Mockery::mock(AdapterInterface::class);
+
+        $adapter->shouldReceive('updateModel')
+                ->withArgs([$model, ['answer' => 42]])
+                ->andReturn(true);
+
+        Model::setAdapter($adapter);
+
+        $model->answer = 42;
+        $model->not_saved = 1234;
+
+        $this->assertTrue($model->set());
+        $this->assertEquals(42, $model->answer);
     }
 
     public function testSetFail()

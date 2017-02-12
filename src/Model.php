@@ -982,8 +982,17 @@ abstract class Model implements ArrayAccess
             return false;
         }
 
+        // exclude values that are not saved
+        $parameters = [];
+        $excluded = (property_exists($this, 'unsaved')) ? static::$unsaved : [];
+        foreach ($this->_unsaved as $k => $v) {
+            if (!in_array($k, $excluded)) {
+                $parameters[$k] = $v;
+            }
+        }
+
         // persist the model in the data layer
-        if (!self::getAdapter()->createModel($this, $this->_unsaved)) {
+        if (!self::getAdapter()->createModel($this, $parameters)) {
             return false;
         }
 
@@ -1057,8 +1066,17 @@ abstract class Model implements ArrayAccess
             return false;
         }
 
+        // exclude values that are not saved
+        $parameters = [];
+        $excluded = (property_exists($this, 'unsaved')) ? static::$unsaved : [];
+        foreach ($this->_unsaved as $k => $v) {
+            if (!in_array($k, $excluded)) {
+                $parameters[$k] = $v;
+            }
+        }
+
         // persist the model in the data layer
-        if (!self::getAdapter()->updateModel($this, $this->_unsaved)) {
+        if (!self::getAdapter()->updateModel($this, $parameters)) {
             return false;
         }
 

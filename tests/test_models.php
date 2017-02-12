@@ -23,7 +23,8 @@ class TestModel extends Model
         'answer' => 'matching',
     ];
 
-    protected static $permitted = ['relation', 'answer', 'mutator', 'accessor', 'test_model2_id'];
+    protected static $permitted = ['relation', 'answer', 'mutator', 'accessor', 'test_model2_id', 'not_saved'];
+    protected static $unsaved = ['not_saved'];
 
     protected static $hidden = [
         'mutator',

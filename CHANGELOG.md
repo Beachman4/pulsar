@@ -16,6 +16,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added model adapter service for Infuse Framework.
 - Can check if models are persisted with `persisted()`
 - Added `getTablename()` method for custom table names.
+- Added `::$unsaved` for excluding properties from being persisted to the data layer.
 
 ### Changed
 - Model properties are now determined by the values the specific model instance contains at run-time instead of being pre-defined.
