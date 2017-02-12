@@ -1335,9 +1335,14 @@ abstract class Model implements ArrayAccess
             return;
         }
 
+        $id = $this->$k;
+        if (!$id) {
+            return;
+        }
+
         if (!isset($this->_relationships[$k])) {
             $model = static::$relationshipsDeprecated[$k];
-            $this->_relationships[$k] = $model::find($this->$k);
+            $this->_relationships[$k] = $model::find($id);
         }
 
         return $this->_relationships[$k];
