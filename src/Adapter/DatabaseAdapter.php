@@ -8,6 +8,7 @@
  * @copyright 2015 Jared King
  * @license MIT
  */
+
 namespace Pulsar\Adapter;
 
 use Carbon\Carbon;
@@ -43,7 +44,7 @@ class DatabaseAdapter implements AdapterInterface
                 ->into($tablename)
                 ->execute() instanceof PDOStatement;
         } catch (PDOException $original) {
-            $e = new AdapterException('An error occurred in the database adapter when creating the '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter when creating the '.$model::modelName().': '.$original->getMessage());
             $e->setException($original);
             throw $e;
         }
@@ -54,7 +55,7 @@ class DatabaseAdapter implements AdapterInterface
         try {
             $id = $this->app['db']->getPDO()->lastInsertId();
         } catch (PDOException $original) {
-            $e = new AdapterException('An error occurred in the database adapter when getting the ID of the new '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter when getting the ID of the new '.$model::modelName().': '.$original->getMessage());
             $e->setException($original);
             throw $e;
         }
@@ -77,7 +78,7 @@ class DatabaseAdapter implements AdapterInterface
                 ->where($model->ids())
                 ->execute() instanceof PDOStatement;
         } catch (PDOException $original) {
-            $e = new AdapterException('An error occurred in the database adapter when updating the '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter when updating the '.$model::modelName().': '.$original->getMessage());
             $e->setException($original);
             throw $e;
         }
@@ -92,7 +93,7 @@ class DatabaseAdapter implements AdapterInterface
                 ->where($model->ids())
                 ->execute() instanceof PDOStatement;
         } catch (PDOException $original) {
-            $e = new AdapterException('An error occurred in the database adapter while deleting the '.$model::modelName());
+            $e = new AdapterException('An error occurred in the database adapter while deleting the '.$model::modelName().': '.$original->getMessage());
             $e->setException($original);
             throw $e;
         }
@@ -128,7 +129,7 @@ class DatabaseAdapter implements AdapterInterface
         try {
             $data = $dbQuery->all();
         } catch (PDOException $original) {
-            $e = new AdapterException('An error occurred in the database adapter while performing the '.$model::modelName().' query');
+            $e = new AdapterException('An error occurred in the database adapter while performing the '.$model::modelName().' query: '.$original->getMessage());
             $e->setException($original);
             throw $e;
         }
@@ -147,7 +148,7 @@ class DatabaseAdapter implements AdapterInterface
                 ->where($query->getWhere())
                 ->scalar();
         } catch (PDOException $original) {
-            $e = new AdapterException('An error occurred in the database adapter while getting the number of '.$model::modelName().' objects');
+            $e = new AdapterException('An error occurred in the database adapter while getting the number of '.$model::modelName().' objects: '.$original->getMessage());
             $e->setException($original);
             throw $e;
         }
