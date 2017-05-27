@@ -683,6 +683,23 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Sets a collection values on the model from an untrusted input.
+     *
+     * @param array $values
+     *
+     * @return self
+     */
+    public function setValues($values)
+    {
+        foreach ($values as $k => $value) {
+            // TODO check for mass assignment violations
+            $this->$k = $value;
+        }
+
+        return $this;
+    }
+
+    /**
      * Ignores unsaved values when fetching the next value.
      *
      * @return self
@@ -817,16 +834,12 @@ abstract class Model implements \ArrayAccess
             throw new BadMethodCallException('Can only call set() on an existing model');
         }
 
-        // not updating anything?
-        if (count($data) == 0) {
-            return true;
-        }
+        // mass assign values passed into set()
+        $this->setValues($data);
 
-        // apply mutators
-        foreach ($data as $k => $value) {
-            if ($mutator = self::getMutator($k)) {
-                $data[$k] = $this->$mutator($value);
-            }
+        // not updating anything?
+        if (count($this->_unsaved) == 0) {
+            return true;
         }
 
         // dispatch the model.updating event
@@ -835,14 +848,14 @@ abstract class Model implements \ArrayAccess
         }
 
         // DEPRECATED
-        if (method_exists($this, 'preSetHook') && !$this->preSetHook($data)) {
+        if (method_exists($this, 'preSetHook') && !$this->preSetHook($this->_unsaved)) {
             return false;
         }
 
         // validate the values being saved
         $validated = true;
         $updateArray = [];
-        foreach ($data as $name => $value) {
+        foreach ($this->_unsaved as $name => $value) {
             // exclude if value does not map to a property
             if (!isset(static::$properties[$name])) {
                 continue;
@@ -852,6 +865,7 @@ abstract class Model implements \ArrayAccess
 
             // can only modify mutable properties
             if ($property['mutable'] != self::MUTABLE) {
+                unset($this->_unsaved[$name]);
                 continue;
             }
 
