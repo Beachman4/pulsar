@@ -276,9 +276,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
             ],
             'created_at' => [
                 'type' => Model::TYPE_DATE,
-                'default' => null,
                 'mutable' => Model::MUTABLE,
-                'null' => true,
+                'null' => false,
                 'unique' => false,
                 'required' => false,
                 'validate' => 'timestamp|db_timestamp',
@@ -585,22 +584,27 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $object->test = true;
 
         $driver->shouldReceive('createModel')
-               ->withArgs([$newModel, [
-                    'id' => 1,
-                    'id2' => 2,
-                    'required' => 25,
-                    'mutable_create_only' => 'test',
-                    'default' => 'some default value',
-                    'hidden' => false,
-                    'created_at' => null,
-                    'array' => [
-                        'tax' => '%',
-                        'discounts' => false,
-                        'shipping' => false,
-                    ],
-                    'object' => $object,
-                    'person' => 20,
-                 ]])
+               ->andReturnUsing(function ($newModel, $params) use ($object) {
+                   unset($params['created_at']);
+                   unset($params['updated_at']);
+                   $expected = [
+                       'id' => 1,
+                       'id2' => 2,
+                       'required' => 25,
+                       'mutable_create_only' => 'test',
+                       'default' => 'some default value',
+                       'hidden' => false,
+                       'created_at' => null,
+                       'array' => [
+                           'tax' => '%',
+                           'discounts' => false,
+                           'shipping' => false,
+                       ],
+                       'object' => $object,
+                       'person' => 20,
+                   ];
+                   $this->assertEquals($expected, $params);
+               })
                ->andReturn(true);
 
         TestModel2::setDriver($driver);
@@ -624,6 +628,21 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $this->assertTrue($newModel->create(['id' => 100]));
         $this->assertNotEquals(100, $newModel->id());
+    }
+
+    public function testCreateAutoTimestamps()
+    {
+        $driver = Mockery::mock(DriverInterface::class);
+        $driver->shouldReceive('createModel')
+            ->andReturn(true);
+        Model::setDriver($driver);
+        $newModel = new TestModel2();
+        $newModel->id = 1;
+        $newModel->id2 = 2;
+        $newModel->required = 25;
+        $this->assertTrue($newModel->create());
+        $this->assertEquals(time(), $newModel->created_at);
+        $this->assertEquals(time(), $newModel->updated_at);
     }
 
     public function testCreateWithId()
@@ -831,6 +850,18 @@ class ModelTest extends PHPUnit_Framework_TestCase
             'mutable_create_only' => 'blah',
         ]));
         $this->assertEquals(10, $model->id);
+    }
+
+    public function testSetAutoTimestamps()
+    {
+        $model = new TestModel2(10);
+        $driver = Mockery::mock(DriverInterface::class);
+        $driver->shouldReceive('updateModel')
+               ->andReturn(true);
+        Model::setDriver($driver);
+        $model->required = true;
+        $this->assertTrue($model->set());
+        $this->assertEquals(time(), $model->updated_at);
     }
 
     public function testSetFailWithNoId()
