@@ -527,6 +527,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($newModel->create($params));
         $this->assertEquals(1, $newModel->id());
         $this->assertEquals(1, $newModel->id);
+        $this->assertEquals(42, $newModel->answer);
     }
 
     public function testCreateWithSave()
@@ -789,6 +790,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
 
         $model->answer = 42;
         $this->assertTrue($model->save());
+        $this->assertEquals(42, $model->answer);
     }
 
     public function testSetMultiple()

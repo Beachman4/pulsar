@@ -23,7 +23,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Deprecated number property type.
 - Deprecated `Validate::is()`.
 - Imported error stack library from `infuse/libs`.
-- Calling `delete()` no longer clears the local values cache.
+- A successful create, update, or delete operation will no longer clear the local values cache.
 
 ### Removed
 - Removed `toArrayDeprecated()` on model class.

@@ -673,11 +673,6 @@ abstract class Model implements \ArrayAccess
             // determine the model's new ID
             $this->_id = $this->getNewID();
 
-            // NOTE clear the local cache before the model.created
-            // event so that fetching values forces a reload
-            // from the storage layer
-            $this->clearCache();
-
             // dispatch the model.created event
             if (!$this->handleDispatch(ModelEvent::CREATED)) {
                 return false;
@@ -871,11 +866,6 @@ abstract class Model implements \ArrayAccess
         $updated = self::$driver->updateModel($this, $updateArray);
 
         if ($updated) {
-            // NOTE clear the local cache before the model.updated
-            // event so that fetching values forces a reload
-            // from the storage layer
-            $this->clearCache();
-
             // dispatch the model.updated event
             if (!$this->handleDispatch(ModelEvent::UPDATED)) {
                 return false;
