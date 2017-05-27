@@ -688,11 +688,12 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        // update the model with the persisted values and new ID(s)
-        $this->refreshWith($this->_unsaved);
-
         // determine the model's new ID
         $this->_id = $this->getNewID();
+
+        // update the model with the persisted values and new ID(s)
+        $newValues = array_replace($this->_unsaved, $this->ids());
+        $this->refreshWith($newValues);
 
         // dispatch the model.created event
         return $this->handleDispatch(ModelEvent::CREATED);
@@ -1064,6 +1065,7 @@ abstract class Model implements \ArrayAccess
     {
         $this->_persisted = true;
         $this->_values = $values;
+        $this->_unsaved = [];
 
         return $this;
     }
