@@ -683,19 +683,19 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        $created = self::$driver->createModel($this, $insertArray);
-
-        if ($created) {
-            // determine the model's new ID
-            $this->_id = $this->getNewID();
-
-            // dispatch the model.created event
-            if (!$this->handleDispatch(ModelEvent::CREATED)) {
-                return false;
-            }
+        // create the model using the driver
+        if (!self::$driver->createModel($this, $insertArray)) {
+            return false;
         }
 
-        return $created;
+        // update the model with the persisted values and new ID(s)
+        $this->refreshWith($this->_unsaved);
+
+        // determine the model's new ID
+        $this->_id = $this->getNewID();
+
+        // dispatch the model.created event
+        return $this->handleDispatch(ModelEvent::CREATED);
     }
 
     /**
@@ -893,16 +893,16 @@ abstract class Model implements \ArrayAccess
             return false;
         }
 
-        $updated = self::$driver->updateModel($this, $updateArray);
-
-        if ($updated) {
-            // dispatch the model.updated event
-            if (!$this->handleDispatch(ModelEvent::UPDATED)) {
-                return false;
-            }
+        // update the model using the driver
+        if (!self::$driver->updateModel($this, $updateArray)) {
+            return false;
         }
 
-        return $updated;
+        // update the model with the persisted values
+        $this->refreshWith($this->_unsaved);
+
+        // dispatch the model.updated event
+        return $this->handleDispatch(ModelEvent::UPDATED);
     }
 
     /**

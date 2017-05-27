@@ -594,7 +594,6 @@ class ModelTest extends PHPUnit_Framework_TestCase
                        'mutable_create_only' => 'test',
                        'default' => 'some default value',
                        'hidden' => false,
-                       'created_at' => null,
                        'array' => [
                            'tax' => '%',
                            'discounts' => false,
@@ -604,8 +603,9 @@ class ModelTest extends PHPUnit_Framework_TestCase
                        'person' => 20,
                    ];
                    $this->assertEquals($expected, $params);
-               })
-               ->andReturn(true);
+
+                   return true;
+               });
 
         TestModel2::setDriver($driver);
 
