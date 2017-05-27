@@ -641,8 +641,8 @@ class ModelTest extends PHPUnit_Framework_TestCase
         $newModel->id2 = 2;
         $newModel->required = 25;
         $this->assertTrue($newModel->create());
-        $this->assertEquals(time(), $newModel->created_at);
-        $this->assertEquals(time(), $newModel->updated_at);
+        $this->assertLessThan(3, time() - $newModel->created_at);
+        $this->assertLessThan(3, time() - $newModel->updated_at);
     }
 
     public function testCreateWithId()
@@ -861,7 +861,7 @@ class ModelTest extends PHPUnit_Framework_TestCase
         Model::setDriver($driver);
         $model->required = true;
         $this->assertTrue($model->set());
-        $this->assertEquals(time(), $model->updated_at);
+        $this->assertLessThan(3, time() - $model->updated_at);
     }
 
     public function testSetFailWithNoId()
