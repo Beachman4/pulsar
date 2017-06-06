@@ -263,6 +263,8 @@ class Query
                     $relationship = $this->getRelationship($newModel, $with);
 
                     $newModel->{$with} = $relationship->getResults();
+
+                    $newModel->addRelationship($with);
                 }
             }
 

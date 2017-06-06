@@ -769,6 +769,15 @@ abstract class Model implements \ArrayAccess
             }
         }
 
+        foreach($this->_relationships as $relationship) {
+            $return[$relationship] = $values[$relationship];
+            foreach($return[$relationship] as $key => $value) {
+                $return[$relationship][$key] = $value->toArray();
+            }
+        }
+
+
+
         return $return;
     }
 
@@ -1487,5 +1496,12 @@ abstract class Model implements \ArrayAccess
     private function getPropertyDefault(array $property)
     {
         return array_value($property, 'default');
+    }
+
+    public function addRelationship($relationship)
+    {
+        array_push($this->_relationships, $relationship);
+
+        return $this;
     }
 }
