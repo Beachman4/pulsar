@@ -31,6 +31,8 @@ class Query
      */
     private $where;
 
+    private $withs;
+
     /**
      * @var int
      */
@@ -49,11 +51,12 @@ class Query
     /**
      * @param string $model model class
      */
-    public function __construct($model = '')
+    public function __construct(Model $model = null)
     {
         $this->model = $model;
         $this->joins = [];
         $this->where = [];
+        $this->withs = [];
         $this->start = 0;
         $this->limit = self::DEFAULT_LIMIT;
         $this->sort = [];
@@ -252,8 +255,20 @@ class Query
                 $id[] = $row[$k];
             }
 
+            $newModel = new $model($id, $row);
+
+            if (count($this->withs)) {
+
+                foreach($this->withs as $with) {
+                    $relationship = $this->getRelationship($newModel, $with);
+
+                    $newModel->{$with} = $relationship->getResults();
+                }
+            }
+
+
             // create the model and cache the loaded values
-            $models[] = new $model($id, $row);
+            $models[] = $newModel;
         }
 
         return $models;
@@ -285,5 +300,28 @@ class Query
         }
 
         return $models;
+    }
+
+    public function with($column)
+    {
+        if (is_array($column)) {
+            foreach($column as $item) {
+                $this->with($item);
+            }
+        }
+
+        array_push($this->withs, $column);
+
+        return $this;
+    }
+
+    public function getWiths()
+    {
+        return $this->withs;
+    }
+
+    public function getRelationship($model, $with)
+    {
+        return call_user_func([$model, $with]);
     }
 }

@@ -46,7 +46,7 @@ abstract class Relation
 
     public function __construct($model, $foreignKey, $localKey, Model $relation)
     {
-        $this->model = $model;
+        $this->model = new $model;
 
         $this->foreignKey = $foreignKey;
         $this->localKey = $localKey;
